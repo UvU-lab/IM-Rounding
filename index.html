@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pre-Rounds · Internal Medicine</title>
+<meta name="theme-color" content="#f4f2ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14171d" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Pre-Rounds">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f4f2ec;--card:#ffffff;--ink:#1b2130;--muted:#687080;--line:#e2ddd2;--soft:#faf8f4;
+  --accent:#1f6f6b;--accent-ink:#ffffff;--accent-soft:#e2efec;
+  --warn:#b23d26;--warn-soft:#f9e4de;--good:#2c7a3d;--good-soft:#e2f1e4;--amber:#9a6410;--amber-soft:#f6ecd8;
+  --S:#3a6a9c;--O:#1f6f6b;--A:#7d5294;--P:#a95c22;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){
+  :root{--paper:#14171d;--card:#1c2028;--ink:#e7e9ee;--muted:#9aa1ae;--line:#2c323d;--soft:#181c23;
+  --accent:#5fb3a9;--accent-ink:#0d1714;--accent-soft:#1d3532;--warn:#ef8a74;--warn-soft:#3b211c;
+  --good:#7cc98a;--good-soft:#1c3221;--amber:#e1b062;--amber-soft:#382c17;
+  --S:#7fa9d6;--O:#5fb3a9;--A:#b994cf;--P:#e0a06b;}
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{opacity:.35;cursor:default}
+input,textarea,select{font:inherit;color:var(--ink)}
+.app{display:grid;grid-template-columns:300px 1fr;height:100vh;height:100dvh;padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left)}
+body{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+body>.app{flex:1;min-height:0;height:auto}
+.sheet{padding-top:env(safe-area-inset-top);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+.banner{display:flex;gap:10px;align-items:center;padding-top:calc(8px + env(safe-area-inset-top))}
+.banner+.app{padding-top:0}
+.banner .x{margin-left:auto;border:0;background:transparent;color:inherit;font-weight:600;padding:2px 6px}
+.banner.info{background:var(--accent-soft);color:var(--accent)}
+.bkstat{display:block;margin-bottom:8px;font-weight:500}
+.bkstat.due{color:var(--amber)}
+.filebtn{position:relative;overflow:hidden}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+body.hasbanner .app{padding-top:0}
+/* ---------- list ---------- */
+aside{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--soft)}
+.brand{padding:18px 18px 12px}
+.brand .r{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.brand h1{font-size:17px;margin:0;font-weight:700;letter-spacing:-.01em}
+.brand small{display:block;color:var(--muted);font-weight:500;font-size:12px;margin-top:2px}
+.brand .acts{display:flex;gap:6px;margin-top:12px}
+.brand .acts .btn{flex:1}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:7px 12px;font-weight:500;font-size:14px;line-height:1.2}
+.btn:hover:not(:disabled){border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.btn.danger{color:var(--warn)}
+.btn.sm{padding:4px 9px;font-size:13px}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover:not(:disabled){background:var(--line)}
+.plist{flex:1;overflow:auto;padding:4px 10px 10px}
+.pitem{display:block;width:100%;text-align:left;border:1px solid transparent;background:transparent;border-radius:var(--r);padding:10px 12px;margin-bottom:4px}
+.pitem:hover{background:var(--card);border-color:var(--line)}
+.pitem.active{background:var(--card);border-color:var(--accent);box-shadow:0 1px 0 var(--line)}
+.row1{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.pitem .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pitem .rm{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
+.pitem .meta{font-size:12.5px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pitem .stale{color:var(--amber)}
+.bar{height:4px;border-radius:4px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:width .2s}
+.chip{font-size:11px;font-weight:600;padding:1px 7px;border-radius:20px;white-space:nowrap;display:inline-block;line-height:1.6}
+.t-Improving{background:var(--good-soft);color:var(--good)}
+.t-Stable{background:var(--accent-soft);color:var(--accent)}
+.t-Worsening{background:var(--warn-soft);color:var(--warn)}
+.t-Unclear{background:var(--amber-soft);color:var(--amber)}
+.t-New{background:var(--accent);color:var(--accent-ink)}
+.t-Active{background:var(--line);color:var(--ink)}
+.t-Resolved{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.asidefoot{border-top:1px solid var(--line);padding:10px 14px calc(14px + env(safe-area-inset-bottom));font-size:12px;color:var(--muted);line-height:1.45}
+.asidefoot .acts{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+/* ---------- detail ---------- */
+main{overflow:auto;min-height:0;position:relative}
+.empty{max-width:460px;margin:14vh auto;text-align:center;padding:20px;color:var(--muted);line-height:1.5}
+.empty h2{color:var(--ink);font-size:22px;margin:0 0 8px}
+.empty .acts{display:flex;gap:8px;justify-content:center;margin-top:18px}
+.dhead{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:12px 22px 10px}
+.dtop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.who{min-width:0}
+.who h2{margin:0;font-size:20px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.who .ids{font-family:var(--mono);font-size:12.5px;color:var(--muted);margin-top:3px;display:flex;gap:14px;flex-wrap:wrap}
+.who .oneliner{font-size:13.5px;color:var(--muted);margin-top:4px;max-width:70ch}
+.dacts{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+select.day,select.st{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 8px;font-size:14px}
+select.day{font-family:var(--mono)}
+.secnav{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.secnav a{display:flex;align-items:center;gap:7px;text-decoration:none;color:var(--ink);font-size:13px;font-weight:500;border:1px solid var(--line);background:var(--card);border-radius:20px;padding:3px 10px 3px 4px}
+.secnav a:hover{border-color:var(--muted)}
+.secnav .rev{font-size:12.5px;color:var(--amber);font-weight:600;margin-left:4px}
+.letter{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;color:#fff;font-weight:700;font-size:11.5px;flex:none}
+.secnav .cnt{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.secnav .cnt.full{color:var(--good)}
+.back{display:none}
+.content{padding:18px 22px 120px;max-width:980px}
+.sec{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:18px;scroll-margin-top:140px}
+.sec>header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.sec>header h3{margin:0;font-size:15.5px;font-weight:600}
+.sec>header .letter{width:26px;height:26px;font-size:13px}
+.sec>header .hint{margin-left:auto;font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center}
+.sbody{padding:14px 16px 16px;display:grid;gap:14px}
+.field label,.lbl{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;letter-spacing:.01em}
+.lbl .n,.field label .n{font-family:var(--mono);font-weight:500;color:var(--muted)}
+textarea,input[type=text],input[type=date],input[type=datetime-local]{width:100%;border:1px solid var(--line);background:var(--soft);border-radius:8px;padding:8px 10px;line-height:1.45;outline:none;transition:border-color .15s,background .15s}
+textarea{resize:none;min-height:42px;overflow:hidden}
+textarea:focus,input:focus,select:focus{border-color:var(--accent);background:var(--card);outline:none}
+textarea::placeholder,input::placeholder{color:color-mix(in srgb,var(--muted) 70%,transparent)}
+textarea.carried,input.carried{border-left:3px solid var(--amber);background:var(--amber-soft)}
+.cbadge{border:0;background:var(--amber-soft);color:var(--amber);font-size:11px;font-weight:600;border-radius:20px;padding:1px 8px}
+.cbadge:hover{filter:brightness(.95)}
+.sub{border-top:1px dashed var(--line);padding-top:14px}
+.sub:first-child{border-top:0;padding-top:0}
+.subh{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.subh .lbl{margin:0}
+.grid{display:grid;gap:8px}
+.vitals{grid-template-columns:repeat(4,minmax(0,1fr))}
+.labs{grid-template-columns:repeat(6,minmax(0,1fr))}
+.io{grid-template-columns:repeat(4,minmax(0,1fr))}
+.cell{border:1px solid var(--line);border-radius:8px;background:var(--soft);padding:6px 8px 5px;position:relative;transition:border-color .15s,background .15s}
+.cell:focus-within{border-color:var(--accent);background:var(--card)}
+.cell .k{font-size:11.5px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;gap:4px}
+.cell .k .u{font-weight:400;font-family:var(--mono);font-size:10.5px}
+.cell input{border:0;background:transparent;padding:2px 0 0;font-family:var(--mono);font-size:16px;font-weight:500;width:100%;outline:none}
+.cell .prev{font-family:var(--mono);font-size:10.5px;color:var(--muted);min-height:13px}
+.cell.abn{border-color:var(--warn);background:var(--warn-soft)}
+.cell.abn input{color:var(--warn)}
+.cell.carried{border-style:dashed;border-color:var(--amber)}
+.cell .flag{position:absolute;top:5px;right:7px;font-size:11px;font-weight:700;color:var(--warn)}
+.cell.calc{background:transparent;border-style:dashed}
+.cell.calc .val{font-family:var(--mono);font-size:16px;font-weight:500;padding-top:2px}
+.exam{display:grid;grid-template-columns:110px 1fr auto;gap:6px 8px;align-items:start}
+.exam .ek{font-size:13px;font-weight:600;padding-top:9px}
+.exam textarea{min-height:38px}
+.wnl{margin-top:4px}
+.trend{display:flex;gap:6px;flex-wrap:wrap}
+.trend button{border:1px solid var(--line);background:var(--soft);border-radius:20px;padding:5px 14px;font-size:13.5px;font-weight:500}
+.trend button.on{border-color:currentColor}
+.prob{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--soft)}
+.prob.carriedp{border-left:3px solid var(--amber)}
+.prob.resolved{opacity:.65}
+.prob .num{font-family:var(--mono);font-weight:500;color:var(--P);padding-top:8px;text-align:center}
+.prob .pf{display:grid;gap:6px}
+.prob .ptop{display:grid;grid-template-columns:1fr auto;gap:6px}
+.prob .pf input{font-weight:600;background:var(--card)}
+.prob .pf textarea{background:var(--card)}
+.prob .pa{display:flex;gap:4px;justify-content:flex-end;align-items:center}
+.prob .pa .cbadge{margin-right:auto}
+.refbox{font-size:13px;color:var(--muted);background:var(--soft);border:1px dashed var(--line);border-radius:8px;padding:8px 10px;white-space:pre-wrap}
+.refbox.amber{color:var(--amber);background:var(--amber-soft);border-color:transparent}
+.fab{position:fixed;right:22px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:8;display:flex;gap:8px}
+.fab .btn{box-shadow:0 4px 18px rgba(0,0,0,.14);padding:10px 16px}
+.banner{background:var(--amber-soft);color:var(--amber);font-size:13px;padding:calc(8px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 8px calc(14px + env(safe-area-inset-left));border-bottom:1px solid var(--line);line-height:1.4}
+.banner+.banner{padding-top:8px}
+/* ---------- sheets (rounds view + background) ---------- */
+.sheet{position:fixed;inset:0;display:none;flex-direction:column;background:var(--paper)}
+.sheet.open{display:flex}
+#pres{z-index:30}
+#bg{z-index:40}
+.shbar{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--card)}
+.shbar .ttl{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shbody{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
+.shinner{max-width:480px;margin:0 auto;padding:14px 14px 30px}
+#bg .shinner{max-width:680px}
+.shnav{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--card)}
+.shnav .btn{flex:1;padding:12px;font-size:15px}
+.counter{font-family:var(--mono);font-size:13px;border:1px solid var(--line);border-radius:20px;padding:4px 10px;background:var(--soft)}
+.jump{position:absolute;top:52px;left:50%;transform:translateX(-50%);width:min(360px,92vw);max-height:60vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:6px;z-index:2;display:none}
+.jump.open{display:block}
+.jump button{display:flex;width:100%;gap:10px;text-align:left;border:0;background:transparent;padding:9px 10px;border-radius:8px;align-items:baseline}
+.jump button:hover,.jump button.cur{background:var(--soft)}
+.jump .b{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:54px}
+/* rounds card */
+.rc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.rc-bed{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.rc-name{font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.15;margin:2px 0 4px}
+.rc-ids{font-family:var(--mono);font-size:12.5px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+.rc-ol{font-size:14.5px;margin:10px 0 0;line-height:1.45}
+.rc-allergy{display:inline-block;margin-top:8px;font-size:12.5px;font-weight:600;color:var(--warn);background:var(--warn-soft);border-radius:6px;padding:3px 8px}
+.rc-imp{margin-top:12px;font-size:14px;line-height:1.45;border-left:3px solid var(--A);padding:2px 0 2px 10px}
+.rc-sec{margin-top:18px}
+.rc-sec h4{margin:0 0 8px;font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.issue{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:8px}
+.issue .ih{display:flex;gap:10px;align-items:baseline}
+.issue .in{font-family:var(--mono);font-weight:600;color:var(--P);flex:none}
+.issue .it{font-weight:600;font-size:15.5px;flex:1;line-height:1.3}
+.issue ul{margin:7px 0 0;padding-left:34px;font-size:14px;line-height:1.45}
+.issue li{margin:2px 0}
+.resolvedline{font-size:13px;color:var(--muted)}
+.kv{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.5}
+.kv>div+div{margin-top:6px}
+.kv b{font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em;display:block}
+.vc{display:inline-block;font-family:var(--mono);font-size:13px;background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:2px 6px;margin:0 4px 4px 0}
+.vc.abn{color:var(--warn);border-color:var(--warn);background:var(--warn-soft);font-weight:600}
+.vc.car{border-style:dashed;border-color:var(--amber)}
+.vc small{color:var(--muted);font-weight:400}
+.stalewarn{background:var(--amber-soft);color:var(--amber);font-size:13px;border-radius:8px;padding:7px 10px;margin-bottom:12px;font-weight:500}
+/* background sheet */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 -14px 14px;padding:0 14px;overflow-x:auto}
+.tabs button{border:0;background:transparent;padding:10px 12px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs .dot{display:inline-block;min-width:18px;font-size:11px;font-family:var(--mono);background:var(--amber-soft);color:var(--amber);border-radius:10px;padding:0 5px;margin-left:4px}
+.bgf{display:grid;gap:14px}
+.hm{display:grid;grid-template-columns:1.3fr 1fr 150px auto;gap:6px;align-items:center;margin-bottom:6px}
+.hm select{border:1px solid var(--line);background:var(--soft);border-radius:8px;padding:8px 6px;font-size:13.5px}
+.med{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.med.held{border-left:3px solid var(--amber)}
+.med.stopped{opacity:.7}
+.med .mn{font-weight:600;font-size:15px}
+.med .ms{font-family:var(--mono);font-size:13px;color:var(--ink);margin-top:2px}
+.med .mi{font-size:12.5px;color:var(--muted);margin-top:3px}
+.med .ma{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.s-active{background:var(--good-soft);color:var(--good)}
+.s-held{background:var(--amber-soft);color:var(--amber)}
+.s-stopped{background:var(--line);color:var(--muted)}
+.log{border-left:2px solid var(--line);margin-left:6px;padding-left:12px}
+.log .le{position:relative;padding:6px 0 8px;font-size:13.5px;line-height:1.4}
+.log .le:before{content:"";position:absolute;left:-18px;top:11px;width:10px;height:10px;border-radius:50%;background:var(--muted);border:2px solid var(--paper)}
+.log .le.a-Started:before{background:var(--good)}
+.log .le.a-Changed:before{background:var(--amber)}
+.log .le.a-Held:before{background:var(--amber)}
+.log .le.a-Resumed:before{background:var(--accent)}
+.log .le.a-Stopped:before{background:var(--warn)}
+.log .lt{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.log .lx{float:right;border:0;background:transparent;color:var(--muted);font-size:13px;padding:0 4px}
+.medchg{font-size:13.5px;line-height:1.45}
+.medchg div{padding:3px 0}
+.medchg .ac{font-weight:600}
+.ac-Started{color:var(--good)}.ac-Changed,.ac-Held{color:var(--amber)}.ac-Resumed{color:var(--accent)}.ac-Stopped{color:var(--warn)}
+/* modal */
+.mwrap{position:fixed;inset:0;background:rgba(10,14,20,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.mwrap.open{display:flex}
+.modal{background:var(--card);border-radius:14px;width:min(520px,100%);max-height:90vh;overflow:auto;padding:20px;border:1px solid var(--line)}
+.modal h3{margin:0 0 12px;font-size:17px}
+.modal .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.modal .mf{display:grid;gap:12px}
+.modal .macts{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}
+.modal textarea.code{font-family:var(--mono);font-size:12px;min-height:200px;overflow:auto;resize:vertical}
+.modal p{color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 10px}
+.modal select{width:100%;border:1px solid var(--line);background:var(--soft);border-radius:8px;padding:8px 10px}
+.toast{position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:9px 16px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:60}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr}
+  aside{border-right:0}
+  main{display:none}
+  body.detail aside{display:none}
+  body.detail main{display:block}
+  .back{display:inline-block}
+  .dhead{padding:10px 14px 8px}
+  .content{padding:14px 12px 120px}
+  .vitals,.io{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .labs{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .exam{grid-template-columns:1fr auto}
+  .exam .ek{grid-column:1/-1;padding-top:4px}
+  .fab{right:12px;bottom:calc(12px + env(safe-area-inset-bottom))}
+  .modal .grid2,.modal .grid3{grid-template-columns:1fr}
+  .sec{scroll-margin-top:170px}
+  .hm{grid-template-columns:1fr 1fr;padding-bottom:8px;border-bottom:1px dashed var(--line)}
+}
+</style>
+</head>
+<body>
+<div id="banner"></div>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <div class="r"><div><h1>Pre-Rounds</h1><small id="todayLbl"></small></div></div>
+      <div class="acts">
+        <button class="btn primary sm" id="addBtn">+ Patient</button>
+        <button class="btn dark sm" id="roundsBtn">▶ Rounds view</button>
+      </div>
+    </div>
+    <div class="plist" id="plist"></div>
+    <div class="asidefoot">
+      <span class="bkstat" id="bkstat"></span>
+      <div class="acts">
+        <button class="btn sm primary" id="saveFileBtn">Save backup file</button>
+        <label class="btn sm filebtn">Load backup file<input type="file" id="loadFile" accept=".json,application/json,text/plain"></label>
+      </div>
+      <div class="acts">
+        <button class="btn sm" id="copyAllBtn">Copy all notes</button>
+        <button class="btn sm" id="backupBtn">Backup as text</button>
+        <button class="btn sm danger" id="clearBtn">Clear all</button>
+      </div>
+      Stored only on this device — nothing is sent anywhere. Save a backup file at the end of each day. Follow your site's privacy rules (e.g. initials + bed), and clear the list when your rotation ends.
+    </div>
+  </aside>
+  <main id="main"></main>
+</div>
+
+<div class="sheet" id="pres"></div>
+<div class="sheet" id="bg"></div>
+<div class="mwrap" id="mwrap"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+const KEY='prerounds.v1';
+let state={patients:[],activeId:null};
+let storageOK=true;
+
+/* ---------- config ---------- */
+const VITALS=[
+  ['t','Temp','°C','37.0'],['tmax','Tmax 24h','°C','37.4'],['hr','HR','bpm','78'],['bp','BP','mmHg','124/76'],
+  ['rr','RR','/min','16'],['spo2','SpO₂','%','96'],['o2','O₂','','RA / 2L NP'],['pain','Pain','/10','2']
+];
+const LABS=[
+  ['na','Na',135,145,'mmol/L'],['k','K',3.5,5.0,'mmol/L'],['cl','Cl',98,107,'mmol/L'],['hco3','HCO₃',22,29,'mmol/L'],
+  ['urea','Urea',2.5,8.0,'mmol/L'],['cr','Cr',50,110,'µmol/L'],['glu','Glucose',4.0,11.0,'mmol/L'],['ca','Ca',2.10,2.60,'mmol/L'],
+  ['mg','Mg',0.70,1.00,'mmol/L'],['phos','PO₄',0.80,1.50,'mmol/L'],['wbc','WBC',4.0,11.0,'×10⁹/L'],['hgb','Hgb',120,160,'g/L'],
+  ['plt','Plt',150,400,'×10⁹/L'],['inr','INR',0.8,1.2,''],['lact','Lactate',0.5,2.0,'mmol/L'],['alb','Albumin',35,50,'g/L'],
+  ['trop','Troponin',null,null,'ng/L'],['crp','CRP',null,10,'mg/L']
+];
+const EXAM=[
+  ['gen','General','Comfortable, alert, in no acute distress'],
+  ['cvs','CVS','HR regular, normal S1/S2, no murmurs; JVP not elevated'],
+  ['resp','Resp','Normal work of breathing; good air entry bilaterally, no crackles or wheeze'],
+  ['abdo','Abdomen','Soft, non-tender, non-distended; bowel sounds present'],
+  ['neuro','Neuro','Alert and oriented ×3; no focal deficits'],
+  ['ext','Extremities','Warm, well perfused; no peripheral edema; calves soft, non-tender'],
+  ['skin','Skin / lines','No rashes; IV site clean, no erythema']
+];
+const TRENDS=['Improving','Stable','Worsening','Unclear'];
+const PSTAT=['New','Active','Improving','Stable','Worsening','Resolved'];
+const ROUTES=['PO','IV','SC','IM','SL','INH','NEB','TOP','PR','NG','TD','Other'];
+const HMSTAT=['Not reconciled','Continued','Modified','Held','Stopped'];
+/* fields carried forward (and flagged for review) when continuing to a new day */
+const CARRY=['s.consults','o.examOther','o.labsOther','o.imaging','a.interp','a.impression','p.todo',...EXAM.map(e=>'o.exam.'+e[0])];
+
+/* ---------- utils ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,10);
+const pad=n=>String(n).padStart(2,'0');
+function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+const today=()=>ymd(new Date());
+const nowLocal=()=>{const d=new Date();return ymd(d)+'T'+pad(d.getHours())+':'+pad(d.getMinutes())};
+function fmtDate(s){if(!s)return'';const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}
+function fmtShort(s){if(!s)return'';const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{month:'short',day:'numeric'})}
+function fmtTs(ts){if(!ts)return'';const d=new Date(ts);return d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+pad(d.getHours())+':'+pad(d.getMinutes())}
+function getP(o,path){return path.split('.').reduce((a,k)=>a==null?undefined:a[k],o)}
+function setP(o,path,v){const ks=path.split('.');let a=o;for(let i=0;i<ks.length-1;i++){a[ks[i]]=a[ks[i]]||{};a=a[ks[i]]}a[ks[ks.length-1]]=v}
+const num=v=>{const n=parseFloat(String(v).replace(',', '.'));return isNaN(n)?null:n};
+const filled=v=>v!=null&&String(v).trim()!=='';
+const clone=o=>JSON.parse(JSON.stringify(o));
+const lines=s=>String(s||'').split('\n').map(x=>x.replace(/^\s*[-•*]\s*/,'').trim()).filter(Boolean);
+
+function blankDay(date){
+  const vit={},labs={},exam={};
+  VITALS.forEach(v=>vit[v[0]]='');LABS.forEach(l=>labs[l[0]]='');EXAM.forEach(e=>exam[e[0]]='');
+  return {date,carried:{},
+    s:{overnight:'',nursing:'',orders:'',consults:'',feeling:''},
+    o:{vitals:vit,vitalsNote:'',weight:'',intake:'',output:'',ioNote:'',exam,examOther:'',labs,labsOther:'',imaging:''},
+    a:{trend:'',interp:'',impression:''},
+    p:{problems:[blankProb()],todo:''}};
+}
+function blankProb(){return {name:'',plan:'',status:'New'}}
+function blankBg(){return {complaint:'',pmhx:'',allergies:'',homeMeds:[],meds:[],medLog:[]}}
+function migrate(){
+  state.patients.forEach(p=>{
+    p.bg=Object.assign(blankBg(),p.bg||{});
+    p.days.forEach(d=>{d.carried=d.carried||{};d.p.problems.forEach(x=>{x.status=x.status||'Active'})});
+  });
+}
+
+/* ---------- storage ---------- */
+function load(){
+  try{const r=localStorage.getItem(KEY);if(r){const s=JSON.parse(r);if(s&&Array.isArray(s.patients))state=s}}
+  catch(e){storageOK=false}
+  migrate();
+}
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(state));storageOK=true}
+  catch(e){storageOK=false}
+  renderBanner();
+}
+let saveT;function saveSoon(){clearTimeout(saveT);saveT=setTimeout(save,250)}
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+const isStandalone=()=>(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+const isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+let updateReady=false;
+function renderBanner(){
+  const parts=[];
+  if(!storageOK)parts.push('<div class="banner">Storage is blocked here, so notes will be lost if you close the app. Save a backup file now.</div>');
+  if(isIOS&&!isStandalone()&&!lsGet('prerounds.hideInstall'))parts.push('<div class="banner info"><span>Install it: tap <b>Share</b> → <b>Add to Home Screen</b>, then always open it from the icon. Notes typed here in Safari don’t carry over to the installed app.</span><button class="x" data-x="install" title="Dismiss">✕</button></div>');
+  if(updateReady)parts.push('<div class="banner info"><span>A new version of Pre-Rounds is ready.</span><button class="btn sm" data-x="reload">Reload</button></div>');
+  $('#banner').innerHTML=parts.join('');
+  document.body.classList.toggle('hasbanner',parts.length>0);
+}
+$('#banner').addEventListener('click',e=>{
+  const b=e.target.closest('[data-x]');if(!b)return;
+  if(b.dataset.x==='install'){lsSet('prerounds.hideInstall','1');renderBanner()}
+  if(b.dataset.x==='reload')location.reload();
+});
+/* ---------- backup files ---------- */
+function renderBkStat(){
+  const el=$('#bkstat');if(!el)return;
+  if(!state.patients.length){el.textContent='';return}
+  const last=lsGet('prerounds.lastBackup');
+  const due=!last||(Date.now()-new Date(last).getTime())>20*36e5;
+  el.className='bkstat'+(due?' due':'');
+  el.textContent=last?('Last backup file: '+fmtTs(last.slice(0,16))+(due?' — save a new one':'')):'No backup file saved yet';
+}
+function markBackup(){lsSet('prerounds.lastBackup',nowLocal());renderBkStat()}
+async function saveBackupFile(){
+  const name='prerounds-backup-'+today()+'.json';
+  const data=JSON.stringify({app:'prerounds',savedAt:new Date().toISOString(),patients:state.patients,activeId:state.activeId});
+  const blob=new Blob([data],{type:'application/json'});
+  let file=null;try{file=new File([blob],name,{type:'application/json'})}catch(e){}
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file]});markBackup();toast('Backup saved');return}
+    catch(e){if(e&&e.name==='AbortError')return}
+  }
+  try{
+    const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);markBackup();toast('Backup file saved');
+  }catch(e){toast('Couldn’t save a file here — use “Backup as text”')}
+}
+function applyBackup(text){
+  let s;try{s=JSON.parse(text)}catch(e){toast('That file isn’t a Pre-Rounds backup');return}
+  if(!s||!Array.isArray(s.patients)){toast('That file isn’t a Pre-Rounds backup');return}
+  const n=s.patients.length,when=s.savedAt?' saved '+fmtTs(s.savedAt):'';
+  confirmBox('Restore backup?',`This backup${esc(when)} has ${n} patient${n===1?'':'s'}. Restoring replaces everything currently in the app.`,'Restore',()=>{
+    state={patients:s.patients,activeId:s.activeId||null};migrate();state.patients.forEach(p=>{p.viewDay=null});
+    if(state.activeId&&!active())state.activeId=null;
+    save();renderList();renderDetail();toast('Backup restored');
+  });
+}
+
+/* ---------- model helpers ---------- */
+const byId=id=>state.patients.find(p=>p.id===id)||null;
+const active=()=>byId(state.activeId);
+function dayIdx(p){let i=p.viewDay;if(i==null||i<0||i>=p.days.length)i=p.days.length-1;return i}
+function curDay(p){return p.days[dayIdx(p)]}
+function prevOf(p,d){const i=p.days.indexOf(d);return i>0?p.days[i-1]:null}
+function hospDay(p,d){
+  if(!p.admit||!d)return null;
+  const a=new Date(p.admit+'T00:00'),b=new Date(d.date+'T00:00');
+  const n=Math.round((b-a)/864e5);return n>=0?n:null;
+}
+function reviewCount(d){
+  return Object.keys(d.carried||{}).length+d.p.problems.filter(x=>x.carried).length;
+}
+function progress(d){
+  const s=['overnight','nursing','orders','consults','feeling'].filter(k=>filled(d.s[k])).length;
+  const o=[
+    Object.values(d.o.vitals).some(filled)||filled(d.o.vitalsNote),
+    filled(d.o.weight)||filled(d.o.intake)||filled(d.o.output)||filled(d.o.ioNote),
+    Object.values(d.o.exam).some(filled)||filled(d.o.examOther),
+    Object.values(d.o.labs).some(filled)||filled(d.o.labsOther),
+    filled(d.o.imaging)
+  ].filter(Boolean).length;
+  const a=[filled(d.a.interp),filled(d.a.impression)||filled(d.a.trend)].filter(Boolean).length;
+  const p=[d.p.problems.some(x=>filled(x.name)&&filled(x.plan))].filter(Boolean).length;
+  return {S:[s,5],O:[o,5],A:[a,2],P:[p,1],pct:Math.round((s+o+a+p)/13*100)};
+}
+function vAbn(k,v){
+  if(!filled(v))return '';
+  if(k==='bp'){const s=num(String(v).split('/')[0]);if(s==null)return '';return s<90?'↓':s>180?'↑':''}
+  const n=num(v);if(n==null)return '';
+  switch(k){
+    case 't':case 'tmax':return n>=38?'↑':n<35.5?'↓':'';
+    case 'hr':return n>100?'↑':n<50?'↓':'';
+    case 'rr':return n>22?'↑':n<10?'↓':'';
+    case 'spo2':return n<92?'↓':'';
+    case 'pain':return n>=7?'↑':'';
+  }return '';
+}
+function lAbn(l,v){
+  const n=num(v);if(n==null)return '';
+  if(l[2]!=null&&n<l[2])return '↓';if(l[3]!=null&&n>l[3])return '↑';return '';
+}
+const medSig=m=>[m.dose,m.route,m.freq].filter(filled).join(' ');
+function recentMedChanges(p,hours){
+  const cut=Date.now()-(hours||24)*36e5;
+  return (p.bg.medLog||[]).filter(e=>new Date(e.ts).getTime()>=cut).sort((a,b)=>b.ts.localeCompare(a.ts));
+}
+function logMed(p,med,action,detail,reason,ts){
+  p.bg.medLog.push({id:uid(),ts:ts||nowLocal(),medId:med.id,med:med.name,action,detail:detail||'',reason:reason||''});
+}
+
+/* ---------- list ---------- */
+function renderList(){
+  const el=$('#plist');
+  if(!state.patients.length){el.innerHTML='<div style="padding:18px 8px;color:var(--muted);font-size:13.5px">No patients yet. Add your list for the day.</div>';renderBkStat();return}
+  el.innerHTML=state.patients.map(p=>{
+    const d=p.days[p.days.length-1],pr=progress(d),rv=reviewCount(d);
+    const t=d.a.trend?`<span class="chip t-${d.a.trend}">${d.a.trend}</span>`:'';
+    const stale=d.date!==today()?` · <span class="stale">last note ${fmtShort(d.date)}</span>`:(rv?` · <span class="stale">${rv} to review</span>`:'');
+    return `<button class="pitem ${p.id===state.activeId?'active':''}" data-pid="${p.id}">
+      <div class="row1"><span class="nm">${esc(p.name||'Unnamed')}</span><span class="rm">${esc(p.room||'')}</span></div>
+      <div class="meta">${esc(p.oneliner||p.bg.complaint||(p.mrn?'ID '+p.mrn:''))}${stale}</div>
+      <div class="row1" style="margin-top:7px;align-items:center"><div class="bar" style="flex:1"><i style="width:${pr.pct}%"></i></div>${t}</div>
+    </button>`}).join('');
+  renderBkStat();
+}
+
+/* ---------- detail ---------- */
+function auto(t){if(!t.offsetParent&&t.closest('.sheet:not(.open)'))return;t.style.height='auto';t.style.height=(t.scrollHeight+2)+'px'}
+function cbadge(path,d){return d&&d.carried&&d.carried[path]?`<button class="cbadge" data-reviewed="${path}" title="Tap to confirm it's still accurate">↻ ${fmtShort(d.carried[path])} · OK</button>`:''}
+function ta(path,label,ph,n,d){
+  return `<div class="field"><label>${n?`<span class="n">${n}</span>`:''}${label}${cbadge(path,d)}</label><textarea data-path="${path}" rows="1" placeholder="${esc(ph)}"></textarea></div>`;
+}
+function renderDetail(){
+  const main=$('#main'),p=active();
+  if(!p){
+    main.innerHTML=`<div class="empty"><h2>Ready to pre-round</h2>
+      Add each patient, then work through Subjective → Objective → Assessment → Plan. Next morning, press <b>Continue to today</b> to update yesterday's card instead of starting over. Present from <b>Rounds view</b>.
+      <div class="acts"><button class="btn primary" data-act="add">+ Add patient</button>${state.patients.length?'':'<button class="btn" data-act="demo">Try a demo patient</button>'}</div></div>`;
+    return;
+  }
+  const d=curDay(p),pv=prevOf(p,d),hd=hospDay(p,d),di=dayIdx(p);
+  const isLatest=di===p.days.length-1,latest=p.days[p.days.length-1];
+  const dayOpts=p.days.map((x,i)=>`<option value="${i}" ${i===di?'selected':''}>${fmtDate(x.date)}${x.date===today()?' (today)':''}</option>`).join('');
+  const secRev=L=>{const n=Object.keys(d.carried).filter(k=>k[0]===L.toLowerCase()).length+(L==='P'?d.p.problems.filter(x=>x.carried).length:0);
+    return n?`<button class="cbadge" data-revsec="${L}">${n} carried · mark all OK</button>`:''};
+  const sec=(L,title,hint,body)=>`<section class="sec" id="sec-${L}"><header><span class="letter" style="background:var(--${L})">${L}</span><h3>${title}</h3><span class="hint">${secRev(L)}<span>${hint}</span></span></header><div class="sbody">${body}</div></section>`;
+
+  const vitals=VITALS.map(v=>`<div class="cell" data-vcell="${v[0]}"><div class="k">${v[1]}<span class="u">${v[2]}</span></div><input type="text" inputmode="${v[0]==='o2'||v[0]==='bp'?'text':'decimal'}" data-path="o.vitals.${v[0]}" placeholder="${v[3]}"><div class="prev">${pv&&filled(pv.o.vitals[v[0]])?'prev '+esc(pv.o.vitals[v[0]]):''}</div><span class="flag"></span></div>`).join('');
+  const labs=LABS.map(l=>`<div class="cell" data-lcell="${l[0]}"><div class="k">${l[1]}<span class="u">${l[4]}</span></div><input type="text" inputmode="decimal" data-path="o.labs.${l[0]}"><div class="prev">${pv&&filled(pv.o.labs[l[0]])?'prev '+esc(pv.o.labs[l[0]]):''}</div><span class="flag"></span></div>`).join('');
+  const exam=EXAM.map(e=>`<div class="ek">${e[1]}</div><textarea rows="1" data-path="o.exam.${e[0]}" placeholder="${esc(e[2])}"></textarea><button class="btn sm wnl" data-wnl="${e[0]}" title="Fill normal findings">WNL</button>`).join('');
+  const hasPrevLabs=pv&&LABS.some(l=>filled(pv.o.labs[l[0]]));
+
+  const S=sec('S','Subjective','Chart review + patient',
+    ta('s.overnight','Overnight events','Codes, rapid responses, falls, new symptoms, PRNs given, transfers…','2.1',d)+
+    ta('s.nursing','Nursing notes','Concerns from nursing, intake/ambulation, sleep, behaviour…','2.2',d)+
+    ta('s.orders','New orders','New meds, holds, tests ordered overnight…','2.3',d)+
+    ta('s.consults','Consultant recommendations','Service — recommendation (date)…','2.4',d)+
+    ta('s.feeling','How is the patient feeling?','Patient\'s own words: pain, SOB, appetite, bowels/bladder, sleep, mobility, concerns…','2.5',d));
+
+  const O=sec('O','Objective','Vitals, I/O, exam, results',
+    `<div class="sub"><div class="subh"><span class="lbl"><span class="n">3.1</span>Vitals</span></div><div class="grid vitals">${vitals}</div>
+      <div style="margin-top:8px"><textarea rows="1" data-path="o.vitalsNote" placeholder="Trends, ranges over 24h, orthostatics…"></textarea></div></div>
+     <div class="sub"><div class="subh"><span class="lbl"><span class="n">3.2</span>Weights, I/Os</span></div>
+      <div class="grid io">
+        <div class="cell"><div class="k">Weight<span class="u">kg</span></div><input type="text" inputmode="decimal" data-path="o.weight"><div class="prev">${pv&&filled(pv.o.weight)?'prev '+esc(pv.o.weight):''}</div></div>
+        <div class="cell"><div class="k">In<span class="u">mL</span></div><input type="text" inputmode="decimal" data-path="o.intake"><div class="prev"></div></div>
+        <div class="cell"><div class="k">Out<span class="u">mL</span></div><input type="text" inputmode="decimal" data-path="o.output"><div class="prev"></div></div>
+        <div class="cell calc"><div class="k">Net / Δwt</div><div class="val" id="netv">—</div><div class="prev" id="dwt"></div></div>
+      </div>
+      <div style="margin-top:8px"><textarea rows="1" data-path="o.ioNote" placeholder="Urine output, drains, stool, dry weight, fluid restriction…"></textarea></div></div>
+     <div class="sub"><div class="subh"><span class="lbl"><span class="n">3.3</span>Physical exam</span><button class="btn sm" data-act="allwnl">Fill blanks as WNL</button></div>
+      <div class="exam">${exam}</div>
+      <div style="margin-top:8px"><textarea rows="1" data-path="o.examOther" placeholder="Other focused findings (e.g. MSK, wound, lymph nodes, mental status)…"></textarea></div></div>
+     <div class="sub"><div class="subh"><span class="lbl"><span class="n">3.4</span>Labs</span><span style="display:flex;gap:8px;align-items:center">${hasPrevLabs?'<button class="btn sm" data-act="prevlabs" title="For labs not redrawn today">Fill blanks from previous</button>':''}<span style="font-size:11.5px;color:var(--muted)">Flags: typical adult SI ranges</span></span></div>
+      <div class="grid labs">${labs}</div>
+      <div style="margin-top:8px"><textarea rows="1" data-path="o.labsOther" placeholder="Other labs: LFTs, VBG/ABG, cultures, drug levels, UA, pending…"></textarea></div></div>
+     <div class="sub">${ta('o.imaging','Imaging','Study (date): key findings / impression…','3.5',d)}</div>`);
+
+  const A=sec('A','Assessment','Pull it together',
+    ta('a.interp','Interpretation of all data','What do the vitals, labs, exam and imaging mean together? What changed since yesterday?','4.1',d)+
+    `<div class="field"><label><span class="n">4.2</span>General impression of how the patient is doing${cbadge('a.impression',d)}</label>
+      <div class="trend" style="margin-bottom:8px">${TRENDS.map(t=>`<button data-trend="${t}" class="t-${t}">${t}</button>`).join('')}</div>
+      <textarea rows="1" data-path="a.impression" placeholder="e.g. Clinically improving on day 3 of IV antibiotics; afebrile, weaning O₂…"></textarea></div>`);
+
+  const P=sec('P','Plan','Issues in order of importance',
+    `<div id="probs" class="grid" style="gap:10px"></div>
+     <div><button class="btn sm" data-act="addprob">+ Add issue</button></div>
+     ${ta('p.todo','To-do / questions for the team','Things to follow up, call, ask your resident about…','',d)}`);
+
+  let notice='';
+  if(!isLatest)notice=`<div class="refbox" style="margin-bottom:14px">You're viewing an earlier day (${fmtDate(d.date)}). Edits here change that day's record.</div>`;
+  else if(latest.date!==today())notice=`<div class="refbox amber" style="margin-bottom:14px">This card is from ${fmtDate(latest.date)}. Press <b>Continue to today</b> to carry it forward and update it.</div>`;
+
+  main.innerHTML=`<div class="dhead">
+    <div class="dtop">
+      <div class="who">
+        <h2><button class="btn sm ghost back" data-act="back">← List</button>${esc(p.name||'Unnamed')}</h2>
+        <div class="ids">${p.mrn?`<span>ID ${esc(p.mrn)}</span>`:''}${p.room?`<span>Bed ${esc(p.room)}</span>`:''}${hd!=null?`<span>HD ${hd}</span>`:''}</div>
+        ${p.oneliner?`<div class="oneliner">${esc(p.oneliner)}</div>`:''}
+      </div>
+      <div class="dacts">
+        <select class="day" id="daySel" title="Note date">${dayOpts}</select>
+        ${latest.date!==today()?'<button class="btn sm primary" data-act="newday">Continue to today</button>':''}
+        <button class="btn sm" data-act="bg">Background &amp; meds</button>
+        <button class="btn sm" data-act="edit">Edit</button>
+        <button class="btn sm danger" data-act="del">Remove</button>
+      </div>
+    </div>
+    <nav class="secnav" id="secnav"></nav>
+  </div>
+  <div class="content">${notice}${S}${O}${A}${P}</div>
+  <div class="fab"><button class="btn" data-act="copy">Copy note</button><button class="btn dark" data-act="present">▶ Present</button></div>`;
+
+  main.querySelectorAll('[data-path]').forEach(el=>{
+    el.value=getP(d,el.dataset.path)??'';
+    if(d.carried[el.dataset.path]){const c=el.closest('.cell');if(c)c.classList.add('carried');else el.classList.add('carried')}
+  });
+  renderProblems();
+  main.querySelectorAll('textarea').forEach(auto);
+  updateDerived();
+}
+function renderProblems(){
+  const p=active();if(!p)return;const d=curDay(p),box=$('#probs');if(!box)return;
+  box.innerHTML=d.p.problems.map((x,i)=>`<div class="prob ${x.carried?'carriedp':''} ${x.status==='Resolved'?'resolved':''}">
+    <div class="num">${i+1}.</div>
+    <div class="pf">
+      <div class="ptop">
+        <input type="text" data-prob="${i}" data-f="name" placeholder="Issue (e.g. CAP — RLL, day 3 ceftriaxone/azithro)">
+        <select class="st" data-prob="${i}" data-f="status" title="Status">${PSTAT.map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`).join('')}</select>
+      </div>
+      <textarea rows="1" data-prob="${i}" data-f="plan" placeholder="Plan — one item per line: diagnostics, therapeutics, monitoring, consults, dispo…"></textarea>
+      <div class="pa">
+        ${x.carried?`<button class="cbadge" data-revprob="${i}">↻ ${fmtShort(x.carried)} · OK</button>`:''}
+        <button class="btn sm ghost" data-up="${i}" title="Move up (more important)" ${i===0?'disabled':''}>↑</button>
+        <button class="btn sm ghost" data-down="${i}" title="Move down" ${i===d.p.problems.length-1?'disabled':''}>↓</button>
+        <button class="btn sm ghost danger" data-rmprob="${i}">Remove</button>
+      </div>
+    </div></div>`).join('');
+  box.querySelectorAll('input[data-prob],textarea[data-prob]').forEach(el=>{el.value=d.p.problems[+el.dataset.prob][el.dataset.f]||''; if(el.tagName==='TEXTAREA')auto(el)});
+}
+function updateDerived(){
+  const p=active();if(!p)return;const d=curDay(p),pv=prevOf(p,d);
+  document.querySelectorAll('[data-vcell]').forEach(c=>{const f=vAbn(c.dataset.vcell,d.o.vitals[c.dataset.vcell]);c.classList.toggle('abn',!!f);c.querySelector('.flag').textContent=f});
+  document.querySelectorAll('[data-lcell]').forEach(c=>{const l=LABS.find(x=>x[0]===c.dataset.lcell);const f=lAbn(l,d.o.labs[l[0]]);c.classList.toggle('abn',!!f);c.querySelector('.flag').textContent=f});
+  const i=num(d.o.intake),o=num(d.o.output),net=$('#netv');
+  if(net)net.textContent=(i!=null&&o!=null)?((i-o>0?'+':'')+(i-o)+' mL'):'—';
+  const w=num(d.o.weight),wp=pv?num(pv.o.weight):null,dw=$('#dwt');
+  if(dw)dw.textContent=(w!=null&&wp!=null)?'Δwt '+((w-wp>0?'+':'')+(w-wp).toFixed(1))+' kg':'';
+  document.querySelectorAll('[data-trend]').forEach(b=>b.classList.toggle('on',b.dataset.trend===d.a.trend));
+  const pr=progress(d),nav=$('#secnav'),rv=reviewCount(d);
+  if(nav){
+    const names={S:'Subjective',O:'Objective',A:'Assessment',P:'Plan'};
+    nav.innerHTML=['S','O','A','P'].map(L=>`<a href="#" data-jump="${L}"><span class="letter" style="background:var(--${L})">${L}</span>${names[L]}<span class="cnt ${pr[L][0]>=pr[L][1]?'full':''}">${pr[L][0]}/${pr[L][1]}</span></a>`).join('')+(rv?`<span class="rev">↻ ${rv} carried item${rv>1?'s':''} to review</span>`:'');
+  }
+}
+function clearCarried(d,path){
+  if(d.carried&&d.carried[path]){delete d.carried[path];return true}return false;
+}
+function refreshCarriedUI(){ // light re-render of badges without losing focus
+  const p=active();if(!p)return;const d=curDay(p);
+  document.querySelectorAll('#main [data-path]').forEach(el=>{
+    const on=!!d.carried[el.dataset.path],c=el.closest('.cell');
+    if(c)c.classList.toggle('carried',on);else el.classList.toggle('carried',on);
+  });
+  document.querySelectorAll('#main [data-reviewed]').forEach(b=>{if(!d.carried[b.dataset.reviewed])b.remove()});
+  document.querySelectorAll('#main [data-revsec]').forEach(b=>{
+    const L=b.dataset.revsec,n=Object.keys(d.carried).filter(k=>k[0]===L.toLowerCase()).length+(L==='P'?d.p.problems.filter(x=>x.carried).length:0);
+    if(!n)b.remove();else b.textContent=n+' carried · mark all OK';
+  });
+}
+
+/* ---------- note text ---------- */
+function noteText(p,d){
+  const pv=prevOf(p,d),L=[],hd=hospDay(p,d);
+  const line=(k,v)=>{if(filled(v))L.push(`${k}: ${String(v).trim()}`)};
+  L.push(`${p.name||'Unnamed'}${p.mrn?' | ID '+p.mrn:''}${p.room?' | Bed '+p.room:''} | ${fmtDate(d.date)}${hd!=null?' | HD '+hd:''}`);
+  if(filled(p.oneliner))L.push(p.oneliner.trim());
+  if(filled(p.bg.allergies))L.push('Allergies: '+p.bg.allergies.trim());
+  L.push('','S:');
+  line('Overnight',d.s.overnight);line('Nursing',d.s.nursing);line('New orders',d.s.orders);line('Consults',d.s.consults);line('Patient reports',d.s.feeling);
+  L.push('','O:');
+  const v=d.o.vitals,vs=[];
+  if(filled(v.t))vs.push(`T ${v.t}`+(filled(v.tmax)?` (Tmax ${v.tmax})`:''));else if(filled(v.tmax))vs.push(`Tmax ${v.tmax}`);
+  if(filled(v.hr))vs.push(`HR ${v.hr}`);if(filled(v.bp))vs.push(`BP ${v.bp}`);if(filled(v.rr))vs.push(`RR ${v.rr}`);
+  if(filled(v.spo2))vs.push(`SpO2 ${v.spo2}%`+(filled(v.o2)?` on ${v.o2}`:''));else if(filled(v.o2))vs.push(`O2 ${v.o2}`);
+  if(filled(v.pain))vs.push(`Pain ${v.pain}/10`);
+  if(vs.length)L.push('Vitals: '+vs.join(' | '));
+  if(filled(d.o.vitalsNote))L.push('  '+d.o.vitalsNote.trim());
+  const io=[];const w=num(d.o.weight),wp=pv?num(pv.o.weight):null;
+  if(filled(d.o.weight))io.push(`Wt ${d.o.weight} kg`+(w!=null&&wp!=null?` (Δ ${(w-wp>0?'+':'')+(w-wp).toFixed(1)})`:''));
+  const i=num(d.o.intake),o=num(d.o.output);
+  if(filled(d.o.intake)||filled(d.o.output))io.push(`I/O ${d.o.intake||'?'}/${d.o.output||'?'}`+(i!=null&&o!=null?` (net ${(i-o>0?'+':'')+(i-o)})`:''));
+  if(io.length)L.push(io.join(' | '));
+  if(filled(d.o.ioNote))L.push('  '+d.o.ioNote.trim());
+  const ex=EXAM.filter(e=>filled(d.o.exam[e[0]]));
+  if(ex.length||filled(d.o.examOther)){L.push('Exam:');ex.forEach(e=>L.push(`  ${e[1]}: ${d.o.exam[e[0]].trim()}`));if(filled(d.o.examOther))L.push('  '+d.o.examOther.trim())}
+  let anyCarLab=false;
+  const lb=LABS.filter(l=>filled(d.o.labs[l[0]])).map(l=>{const f=lAbn(l,d.o.labs[l[0]]);const car=d.carried['o.labs.'+l[0]];if(car)anyCarLab=true;
+    const pvv=!car&&pv&&filled(pv.o.labs[l[0]])?` (${pv.o.labs[l[0]]})`:'';return `${l[1]} ${d.o.labs[l[0]]}${f}${car?'*':''}${pvv}`});
+  if(lb.length)L.push('Labs: '+lb.join(', ')+(pv&&lb.some(x=>x.includes('('))?'   [prev in brackets]':'')+(anyCarLab?'   [* not repeated]':''));
+  if(filled(d.o.labsOther))L.push('  '+d.o.labsOther.trim());
+  line('Imaging',d.o.imaging);
+  const mc=recentMedChanges(p,24);
+  if(mc.length)L.push('Med changes (24h): '+mc.map(e=>`${e.action} ${e.med}${e.detail?' ('+e.detail+')':''}`).join('; '));
+  L.push('','A:');
+  if(filled(d.a.trend)||filled(d.a.impression))L.push('Impression: '+[d.a.trend,d.a.impression&&d.a.impression.trim()].filter(Boolean).join(' — '));
+  line('Interpretation',d.a.interp);
+  L.push('','P:');
+  const probs=d.p.problems.filter(x=>filled(x.name)||filled(x.plan));
+  probs.filter(x=>x.status!=='Resolved').forEach((x,n)=>{L.push(`${n+1}. ${(x.name||'').trim()}${x.status&&x.status!=='Active'?' ['+x.status+']':''}`);lines(x.plan).forEach(s=>L.push('   - '+s))});
+  const res=probs.filter(x=>x.status==='Resolved');
+  if(res.length)L.push('Resolved: '+res.map(x=>x.name.trim()).join('; '));
+  line('To-do',d.p.todo);
+  return L.join('\n');
+}
+function roundsText(){
+  return state.patients.map(p=>{
+    const d=p.days[p.days.length-1],hd=hospDay(p,d),L=[];
+    L.push(`${p.room?p.room+' · ':''}${p.name}${p.mrn?' · ID '+p.mrn:''}${hd!=null?' · HD '+hd:''}${d.a.trend?' · '+d.a.trend:''}`);
+    if(filled(p.oneliner))L.push(p.oneliner.trim());
+    d.p.problems.filter(x=>filled(x.name)&&x.status!=='Resolved').forEach((x,n)=>{L.push(`${n+1}. ${x.name.trim()}${x.status&&x.status!=='Active'?' ['+x.status+']':''}`);lines(x.plan).forEach(s=>L.push('   - '+s))});
+    if(filled(d.p.todo))L.push('To-do: '+d.p.todo.trim());
+    return L.join('\n');
+  }).join('\n\n');
+}
+
+/* ---------- modal / toast ---------- */
+function openModal(html,mount){$('#modal').innerHTML=html;$('#mwrap').classList.add('open');if(mount)mount($('#modal'))}
+function closeModal(){$('#mwrap').classList.remove('open');$('#modal').innerHTML=''}
+$('#mwrap').addEventListener('mousedown',e=>{if(e.target.id==='mwrap')closeModal()});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){if($('#mwrap').classList.contains('open'))closeModal();else if($('#bg').classList.contains('open'))closeBg();else if($('#pres').classList.contains('open'))closePres()}
+  if($('#pres').classList.contains('open')&&!$('#bg').classList.contains('open')&&!$('#mwrap').classList.contains('open')){
+    if(e.key==='ArrowRight')presGo(1);if(e.key==='ArrowLeft')presGo(-1);
+  }
+});
+function confirmBox(title,msg,ok,cb){
+  openModal(`<h3>${title}</h3><p>${msg}</p><div class="macts"><button class="btn" data-m="no">Cancel</button><button class="btn primary" data-m="yes">${ok}</button></div>`,m=>{
+    m.querySelector('[data-m=no]').onclick=closeModal;m.querySelector('[data-m=yes]').onclick=()=>{closeModal();cb()};
+  });
+}
+let toastT;function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),1900)}
+function copyText(txt,label){
+  const fallback=()=>openModal(`<h3>Copy ${label}</h3><p>Your browser blocked automatic copying — select all below and copy.</p><textarea class="code" readonly>${esc(txt)}</textarea><div class="macts"><button class="btn primary" data-m="x">Done</button></div>`,m=>{const t=m.querySelector('textarea');t.focus();t.select();m.querySelector('[data-m=x]').onclick=closeModal});
+  try{navigator.clipboard.writeText(txt).then(()=>toast(label+' copied'),fallback)}catch(e){fallback()}
+}
+
+/* ---------- patient form ---------- */
+function patientForm(p){
+  const isNew=!p;p=p||{bg:blankBg()};
+  openModal(`<h3>${isNew?'Add patient':'Edit patient'}</h3>
+    <form class="mf" id="pf">
+      <div class="field"><label>Name</label><input type="text" name="name" value="${esc(p.name)}" placeholder="Name or initials" autocomplete="off"></div>
+      <div class="grid2">
+        <div class="field"><label>ID</label><input type="text" name="mrn" value="${esc(p.mrn)}" placeholder="MRN / PHIN" autocomplete="off"></div>
+        <div class="field"><label>Room / bed</label><input type="text" name="room" value="${esc(p.room)}" placeholder="e.g. 4B-12" autocomplete="off"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Admission date</label><input type="date" name="admit" value="${esc(p.admit)}"></div>
+        <div class="field"><label>Presenting complaint</label><input type="text" name="complaint" value="${esc(p.bg.complaint)}" placeholder="e.g. SOB × 3 days" autocomplete="off"></div>
+      </div>
+      <div class="field"><label>One-liner <span style="font-weight:400">(optional)</span></label><textarea name="oneliner" rows="2" placeholder="e.g. 72M with HFrEF admitted with ADHF">${esc(p.oneliner)}</textarea></div>
+      ${isNew?'':`<div class="field"><label>Position in rounds order</label><div style="display:flex;gap:6px"><button type="button" class="btn sm" data-mv="-1">Move earlier</button><button type="button" class="btn sm" data-mv="1">Move later</button></div></div>`}
+      <div class="macts"><button type="button" class="btn" data-m="no">Cancel</button><button class="btn primary" type="submit">${isNew?'Add':'Save'}</button></div>
+    </form>`,m=>{
+    const f=m.querySelector('#pf');f.elements.name.focus();
+    m.querySelector('[data-m=no]').onclick=closeModal;
+    m.querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>{
+      const i=state.patients.indexOf(p),j=i+(+b.dataset.mv);if(j<0||j>=state.patients.length)return;
+      [state.patients[i],state.patients[j]]=[state.patients[j],state.patients[i]];save();renderList();toast('Moved to position '+(j+1));
+    });
+    f.addEventListener('submit',e=>{
+      e.preventDefault();
+      const vals={name:f.elements.name.value.trim(),mrn:f.elements.mrn.value.trim(),room:f.elements.room.value.trim(),admit:f.elements.admit.value,oneliner:f.elements.oneliner.value.trim()};
+      if(!vals.name){f.elements.name.focus();f.elements.name.placeholder='Name or initials is required';return}
+      if(isNew){const np={id:uid(),...vals,bg:blankBg(),days:[blankDay(today())]};np.bg.complaint=f.elements.complaint.value.trim();state.patients.push(np);state.activeId=np.id;document.body.classList.add('detail')}
+      else{Object.assign(p,vals);p.bg.complaint=f.elements.complaint.value.trim()}
+      save();closeModal();renderList();renderDetail();
+    });
+  });
+}
+
+/* ---------- continue to today ---------- */
+function continueToday(p){
+  if(p.days.some(x=>x.date===today())){p.viewDay=p.days.findIndex(x=>x.date===today());return false}
+  const last=p.days[p.days.length-1],nd=clone(last),from=last.date;
+  nd.date=today();nd.carried={};
+  // inherently daily — start blank (yesterday's values still shown as "prev")
+  ['overnight','nursing','orders','feeling'].forEach(k=>nd.s[k]='');
+  Object.keys(nd.o.vitals).forEach(k=>nd.o.vitals[k]='');
+  Object.keys(nd.o.labs).forEach(k=>nd.o.labs[k]='');
+  ['vitalsNote','weight','intake','output','ioNote'].forEach(k=>nd.o[k]='');
+  // carried — kept, flagged for review until edited or confirmed
+  CARRY.forEach(path=>{if(filled(getP(nd,path)))nd.carried[path]=from});
+  nd.p.problems=nd.p.problems.filter(x=>filled(x.name)||filled(x.plan));
+  nd.p.problems.forEach(x=>{if(x.status==='New')x.status='Active';x.carried=x.status==='Resolved'?false:from;if(!x.carried)delete x.carried});
+  if(!nd.p.problems.length)nd.p.problems=[blankProb()];
+  p.days.push(nd);p.viewDay=p.days.length-1;return true;
+}
+
+/* ---------- demo ---------- */
+function addDemo(){
+  const t=new Date(),y=new Date(t-864e5),a=new Date(t-3*864e5);
+  const d0=blankDay(ymd(y));
+  Object.assign(d0.s,{overnight:'Uneventful.',nursing:'Eating 25% of meals. Needed 1-person assist.',orders:'Repeat lytes, CXR in 48h.',consults:'None active.',feeling:'Still short of breath with exertion; cough productive.'});
+  Object.assign(d0.o.vitals,{t:'38.1',tmax:'38.6',hr:'104',bp:'118/70',rr:'24',spo2:'91',o2:'3L NP',pain:'4'});
+  Object.assign(d0.o,{weight:'81.2',intake:'2100',output:'1400',imaging:'CXR (admission): RLL consolidation, no effusion.'});
+  Object.assign(d0.o.labs,{na:'134',k:'3.4',cr:'128',urea:'9.1',wbc:'15.2',hgb:'118',plt:'210',mg:'0.68'});
+  Object.assign(d0.o.exam,{gen:'Tired-appearing, mild respiratory distress',resp:'Crackles R base, bronchial breath sounds RLL',cvs:'Tachycardic, regular, no murmurs'});
+  d0.a={trend:'Stable',interp:'Ongoing SIRS response to RLL CAP; AKI pre-renal, improving with fluids.',impression:'Day 2 of antibiotics, not yet improving but not worse.'};
+  d0.p.problems=[{name:'Community-acquired pneumonia (RLL)',status:'Active',plan:'Ceftriaxone 1 g IV q24h + azithromycin day 2\nFollow blood cultures\nWean O2 to SpO2 ≥ 92%'},{name:'AKI on CKD 3a',status:'Active',plan:'Hold ramipril\nIV NS 100 mL/h, reassess volume\nRepeat lytes/Cr AM'},{name:'Hypokalemia / hypomagnesemia',status:'New',plan:'KCl 20 mEq PO ×2\nMg sulfate 2 g IV'}];
+  d0.p.todo='Ask resident re: step-down to PO antibiotics criteria';
+  const p={id:uid(),name:'J.D. (demo)',mrn:'000000',room:'4B-12',admit:ymd(a),oneliner:'68M, COPD, CKD 3a, admitted with RLL CAP and AKI',days:[d0],
+    bg:{complaint:'Fever, productive cough and SOB × 4 days',allergies:'Penicillin (rash)',pmhx:'COPD (GOLD 2, no home O2)\nCKD 3a (baseline Cr ~105)\nHypertension\nType 2 diabetes (diet-controlled)',
+      homeMeds:[{id:uid(),name:'Ramipril',dose:'5 mg PO daily',status:'Held',note:'AKI'},{id:uid(),name:'Tiotropium',dose:'18 mcg INH daily',status:'Continued',note:''},{id:uid(),name:'Salbutamol',dose:'100 mcg 2 puffs q4h PRN',status:'Continued',note:''}],
+      meds:[],medLog:[]}};
+  const add=(name,dose,route,freq,ind,start,hrs)=>{const m={id:uid(),name,dose,route,freq,indication:ind,status:'active',start};p.bg.meds.push(m);
+    const ts=new Date(Date.now()-hrs*36e5);logMed(p,m,'Started',medSig(m),'',ymd(ts)+'T'+pad(ts.getHours())+':'+pad(ts.getMinutes()));return m};
+  add('Ceftriaxone','1 g','IV','q24h','CAP',ymd(a),70);
+  add('Azithromycin','500 mg','IV','daily','CAP',ymd(a),70);
+  add('Tiotropium','18 mcg','INH','daily','COPD',ymd(a),70);
+  const ns=add('Normal saline','100 mL/h','IV','continuous','AKI',ymd(a),68);
+  add('Heparin','5000 units','SC','q12h','VTE prophylaxis',ymd(a),66);
+  const k=add('Potassium chloride','20 mEq','PO','BID','Hypokalemia',ymd(y),20);
+  const ts=new Date(Date.now()-6*36e5),tss=ymd(ts)+'T'+pad(ts.getHours())+':'+pad(ts.getMinutes());
+  ns.dose='75 mL/h';logMed(p,ns,'Changed','dose 100 mL/h → 75 mL/h','Improving Cr, euvolemic',tss);
+  state.patients.push(p);state.activeId=p.id;
+  continueToday(p);
+  const d1=p.days[1];
+  Object.assign(d1.s,{overnight:'Uneventful. 1× acetaminophen for headache.',nursing:'Eating 50% of meals. Ambulated to bathroom with walker.',orders:'NS rate reduced to 75 mL/h.',feeling:'"Breathing easier." Cough less. Mild R pleuritic pain 3/10.'});
+  Object.assign(d1.o.vitals,{t:'37.2',tmax:'37.8',hr:'92',bp:'128/74',rr:'20',spo2:'93',o2:'2L NP',pain:'3'});
+  Object.assign(d1.o,{weight:'80.6',intake:'1650',output:'2100'});
+  Object.assign(d1.o.labs,{na:'136',k:'3.8',cr:'109',urea:'7.4',wbc:'11.8',hgb:'115',plt:'228',mg:'0.82'});
+  d1.o.exam.resp='Crackles R base, improved; no bronchial breath sounds';delete d1.carried['o.exam.resp'];
+  d1.a.trend='Improving';
+  document.body.classList.add('detail');save();renderList();renderDetail();
+}
+
+/* ---------- rounds view (presentation) ---------- */
+let presI=0;
+function openPres(pid){
+  if(!state.patients.length){toast('Add a patient first');return}
+  presI=Math.max(0,state.patients.findIndex(p=>p.id===pid));
+  $('#pres').classList.add('open');renderPres();
+}
+function closePres(){$('#pres').classList.remove('open');renderList();renderDetail()}
+function presGo(dir){const n=state.patients.length;const j=presI+dir;if(j<0||j>=n)return;presI=j;renderPres()}
+function presCard(p){
+  const d=p.days[p.days.length-1],pv=prevOf(p,d),hd=hospDay(p,d),bg=p.bg;
+  const probs=d.p.problems.filter(x=>filled(x.name)||filled(x.plan));
+  const act=probs.filter(x=>x.status!=='Resolved'),res=probs.filter(x=>x.status==='Resolved');
+  const issues=act.length?act.map((x,i)=>`<div class="issue"><div class="ih"><span class="in">${i+1}.</span><span class="it">${esc(x.name||'(unnamed)')}</span>${x.status&&x.status!=='Active'?`<span class="chip t-${x.status}">${x.status}</span>`:''}</div>${lines(x.plan).length?`<ul>${lines(x.plan).map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}</div>`).join(''):'<div class="resolvedline">No issues entered yet.</div>';
+  const v=d.o.vitals,vc=[];
+  const vchip=(k,txt)=>vc.push(`<span class="vc ${vAbn(k,v[k])?'abn':''}">${txt}${vAbn(k,v[k])}</span>`);
+  if(filled(v.t))vchip('t',`T ${esc(v.t)}`);if(filled(v.tmax))vchip('tmax',`Tmax ${esc(v.tmax)}`);if(filled(v.hr))vchip('hr',`HR ${esc(v.hr)}`);
+  if(filled(v.bp))vchip('bp',`BP ${esc(v.bp)}`);if(filled(v.rr))vchip('rr',`RR ${esc(v.rr)}`);
+  if(filled(v.spo2))vchip('spo2',`SpO₂ ${esc(v.spo2)}%${filled(v.o2)?' '+esc(v.o2):''}`);else if(filled(v.o2))vc.push(`<span class="vc">${esc(v.o2)}</span>`);
+  if(filled(v.pain))vchip('pain',`Pain ${esc(v.pain)}`);
+  const i=num(d.o.intake),o=num(d.o.output),w=num(d.o.weight),wp=pv?num(pv.o.weight):null;
+  if(i!=null&&o!=null)vc.push(`<span class="vc">Net ${(i-o>0?'+':'')+(i-o)}</span>`);
+  if(w!=null)vc.push(`<span class="vc">Wt ${w}${wp!=null?` <small>(${(w-wp>0?'+':'')+(w-wp).toFixed(1)})</small>`:''}</span>`);
+  const lc=LABS.filter(l=>filled(d.o.labs[l[0]])).map(l=>{const f=lAbn(l,d.o.labs[l[0]]),car=d.carried['o.labs.'+l[0]];
+    const pvv=!car&&pv&&filled(pv.o.labs[l[0]])?` <small>${esc(pv.o.labs[l[0]])}</small>`:'';
+    return `<span class="vc ${f?'abn':''} ${car?'car':''}">${l[1]} ${esc(d.o.labs[l[0]])}${f}${pvv}</span>`}).join('');
+  const mc=recentMedChanges(p,24);
+  const kv=[];
+  if(filled(d.s.feeling))kv.push(`<div><b>Patient</b>${esc(d.s.feeling)}</div>`);
+  if(filled(d.s.overnight))kv.push(`<div><b>Overnight</b>${esc(d.s.overnight)}</div>`);
+  if(filled(d.s.consults))kv.push(`<div><b>Consults</b>${esc(d.s.consults)}</div>`);
+  const exAbn=EXAM.filter(e=>filled(d.o.exam[e[0]])&&d.o.exam[e[0]]!==e[2]).map(e=>`${e[1]}: ${esc(d.o.exam[e[0]])}`);
+  if(exAbn.length||filled(d.o.examOther))kv.push(`<div><b>Exam (pertinent)</b>${exAbn.concat(filled(d.o.examOther)?[esc(d.o.examOther)]:[]).join('<br>')}</div>`);
+  if(filled(d.o.imaging)&&!d.carried['o.imaging'])kv.push(`<div><b>Imaging</b>${esc(d.o.imaging)}</div>`);
+  return `
+    ${d.date!==today()?`<div class="stalewarn">Latest card is from ${fmtDate(d.date)} — not updated today.</div>`:''}
+    <div class="rc-head"><div style="min-width:0">
+      <div class="rc-bed">${p.room?'Bed '+esc(p.room):''}</div>
+      <div class="rc-name">${esc(p.name)}</div>
+      <div class="rc-ids">${p.mrn?`<span>ID ${esc(p.mrn)}</span>`:''}${hd!=null?`<span>HD ${hd}</span>`:''}${p.admit?`<span>Adm ${fmtShort(p.admit)}</span>`:''}</div>
+    </div>${d.a.trend?`<span class="chip t-${d.a.trend}" style="font-size:12.5px;padding:3px 10px">${d.a.trend}</span>`:''}</div>
+    ${filled(p.oneliner)?`<p class="rc-ol">${esc(p.oneliner)}</p>`:filled(bg.complaint)?`<p class="rc-ol">${esc(bg.complaint)}</p>`:''}
+    ${filled(bg.allergies)?`<span class="rc-allergy">Allergies: ${esc(bg.allergies)}</span>`:''}
+    ${filled(d.a.impression)?`<div class="rc-imp">${esc(d.a.impression)}</div>`:''}
+    <div class="rc-sec"><h4>Issues — in order of importance</h4>${issues}${res.length?`<div class="resolvedline">Resolved: ${res.map(x=>esc(x.name)).join('; ')}</div>`:''}</div>
+    ${vc.length?`<div class="rc-sec"><h4>Vitals · I/O</h4><div>${vc.join('')}</div></div>`:''}
+    ${lc?`<div class="rc-sec"><h4>Labs <span style="text-transform:none;letter-spacing:0;font-weight:400">grey = previous</span></h4><div>${lc}</div></div>`:''}
+    ${mc.length?`<div class="rc-sec"><h4>Med changes · last 24 h</h4><div class="kv medchg">${mc.map(e=>`<div><span class="ac ac-${e.action}">${e.action}</span> ${esc(e.med)}${e.detail?' — '+esc(e.detail):''}${e.reason?` <span style="color:var(--muted)">(${esc(e.reason)})</span>`:''}</div>`).join('')}</div></div>`:''}
+    ${kv.length?`<div class="rc-sec"><h4>Today</h4><div class="kv">${kv.join('')}</div></div>`:''}
+    ${filled(d.p.todo)?`<div class="rc-sec"><h4>To-do</h4><div class="kv">${esc(d.p.todo).replace(/\n/g,'<br>')}</div></div>`:''}
+    <div class="rc-sec"><button class="btn" style="width:100%;padding:12px" data-pa="bg">Background: admission, PMHx, home &amp; hospital meds →</button></div>`;
+}
+function renderPres(){
+  const n=state.patients.length;presI=Math.min(presI,n-1);const p=state.patients[presI];
+  $('#pres').innerHTML=`
+    <div class="shbar" style="position:relative">
+      <button class="btn sm ghost" data-pa="close">✕ Close</button>
+      <div class="ttl" style="text-align:center"><button class="counter" data-pa="jump">${presI+1} / ${n} ▾</button></div>
+      <button class="btn sm" data-pa="copylist">Copy list</button>
+      <div class="jump" id="jump">${state.patients.map((x,i)=>`<button data-pj="${i}" class="${i===presI?'cur':''}"><span class="b">${esc(x.room||'—')}</span><span>${esc(x.name)}</span></button>`).join('')}</div>
+    </div>
+    <div class="shbody" id="presBody"><div class="shinner">${presCard(p)}</div></div>
+    <div class="shnav"><button class="btn" data-pa="prev" ${presI===0?'disabled':''}>‹ Prev</button><button class="btn" data-pa="edit">Edit card</button><button class="btn" data-pa="next" ${presI===n-1?'disabled':''}>Next ›</button></div>`;
+  $('#presBody').scrollTop=0;
+}
+$('#pres').addEventListener('click',e=>{
+  const j=e.target.closest('[data-pj]');if(j){presI=+j.dataset.pj;renderPres();return}
+  const b=e.target.closest('[data-pa]');
+  if(!b){const jp=$('#jump');if(jp&&!e.target.closest('#jump'))jp.classList.remove('open');return}
+  const a=b.dataset.pa,p=state.patients[presI];
+  if(a==='close')closePres();
+  else if(a==='prev')presGo(-1);
+  else if(a==='next')presGo(1);
+  else if(a==='jump')$('#jump').classList.toggle('open');
+  else if(a==='copylist')copyText(roundsText(),'Rounds list');
+  else if(a==='bg')openBg(p.id);
+  else if(a==='edit'){state.activeId=p.id;p.viewDay=null;save();document.body.classList.add('detail');closePres()}
+});
+(function(){let x0=null,y0=null;const el=$('#pres');
+  el.addEventListener('touchstart',e=>{if(e.target.closest('#jump'))return;x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
+  el.addEventListener('touchend',e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;x0=null;
+    if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.5)presGo(dx<0?1:-1)});
+})();
+
+/* ---------- background sheet ---------- */
+let bgPid=null,bgTab='overview';
+function openBg(pid,tab){bgPid=pid;if(tab)bgTab=tab;$('#bg').classList.add('open');renderBg()}
+function closeBg(){$('#bg').classList.remove('open');if($('#pres').classList.contains('open'))renderPres();else{renderList();renderDetail()}}
+function renderBg(){
+  const p=byId(bgPid);if(!p){closeBg();return}const bg=p.bg;
+  const nchg=recentMedChanges(p,24).length;
+  let body='';
+  if(bgTab==='overview'){
+    body=`<div class="bgf">
+      <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field"><label>Admission date</label><input type="date" data-bgf="admit" value="${esc(p.admit)}"></div>
+        <div class="field"><label>Hospital day</label><div style="padding:9px 0;font-family:var(--mono)">${p.admit?(hospDay(p,{date:today()})??'—'):'—'}</div></div>
+      </div>
+      <div class="field"><label>Presenting complaint / reason for admission</label><textarea rows="1" data-bgf="bg.complaint" placeholder="e.g. Fever, productive cough and SOB × 4 days"></textarea></div>
+      <div class="field"><label>One-liner</label><textarea rows="1" data-bgf="oneliner" placeholder="e.g. 68M, COPD, CKD 3a, admitted with RLL CAP"></textarea></div>
+      <div class="field"><label>Allergies</label><textarea rows="1" data-bgf="bg.allergies" placeholder="Drug — reaction (or NKDA)"></textarea></div>
+      <div class="field"><label>Past medical history</label><textarea rows="3" data-bgf="bg.pmhx" placeholder="One condition per line, with key details (severity, baseline, dates)"></textarea></div>
+    </div>`;
+  }else if(bgTab==='home'){
+    body=`<p style="font-size:13px;color:var(--muted);margin:0 0 12px">Pre-admission medications and what happened to each on admission (med rec). “Start in hospital” copies one into the hospital med list.</p>
+      ${bg.homeMeds.map((h,i)=>`<div class="hm">
+        <input type="text" data-hm="${i}" data-f="name" placeholder="Medication">
+        <input type="text" data-hm="${i}" data-f="dose" placeholder="Dose / route / freq">
+        <select data-hm="${i}" data-f="status">${HMSTAT.map(s=>`<option ${h.status===s?'selected':''}>${s}</option>`).join('')}</select>
+        <span style="display:flex;gap:2px"><button class="btn sm ghost" data-hstart="${i}" title="Start in hospital">→ Start</button><button class="btn sm ghost danger" data-hrm="${i}" title="Remove">✕</button></span>
+        <input type="text" data-hm="${i}" data-f="note" placeholder="Note (reason held/changed…)" style="grid-column:1/-1;font-size:13.5px">
+      </div>`).join('')||'<div class="refbox" style="margin-bottom:10px">No home medications entered.</div>'}
+      <button class="btn sm" data-bga="addhome">+ Add home medication</button>`;
+  }else{
+    const ord={active:0,held:1,stopped:2};
+    const meds=bg.meds.slice().sort((a,b)=>ord[a.status]-ord[b.status]);
+    const card=m=>`<div class="med ${m.status}">
+      <div class="row1"><span class="mn">${esc(m.name)}</span><span class="chip s-${m.status}">${m.status==='active'?'Active':m.status==='held'?'Held':'Stopped'}</span></div>
+      <div class="ms">${esc(medSig(m))||'—'}</div>
+      <div class="mi">${m.indication?esc(m.indication)+' · ':''}${m.start?'since '+fmtShort(m.start):''}${m.status==='stopped'&&m.stop?' · stopped '+fmtShort(m.stop):''}</div>
+      <div class="ma">
+        ${m.status!=='stopped'?`<button class="btn sm" data-med="edit" data-mid="${m.id}">Change dose / freq</button>`:''}
+        ${m.status==='active'?`<button class="btn sm" data-med="Held" data-mid="${m.id}">Hold</button>`:''}
+        ${m.status==='held'?`<button class="btn sm" data-med="Resumed" data-mid="${m.id}">Resume</button>`:''}
+        ${m.status!=='stopped'?`<button class="btn sm danger" data-med="Stopped" data-mid="${m.id}">Stop</button>`:`<button class="btn sm" data-med="Restarted" data-mid="${m.id}">Restart</button>`}
+      </div></div>`;
+    const log=bg.medLog.slice().sort((a,b)=>b.ts.localeCompare(a.ts));
+    body=`<div class="row1" style="margin-bottom:12px;align-items:center"><span style="font-size:13px;color:var(--muted)">Every change is logged with date &amp; time. This list is separate from the daily notes.</span><button class="btn sm primary" data-bga="addmed">+ Medication</button></div>
+      ${meds.length?meds.map(card).join(''):'<div class="refbox">No hospital medications entered.</div>'}
+      <div class="rc-sec"><h4>Change log${nchg?` · ${nchg} in last 24 h`:''}</h4>
+      ${log.length?`<div class="log">${log.map(e=>`<div class="le a-${e.action==='Restarted'?'Started':e.action}"><button class="lx" data-lx="${e.id}" title="Delete entry (entered in error)">✕</button><div class="lt">${fmtTs(e.ts)}</div><span class="ac ac-${e.action==='Restarted'?'Started':e.action}">${e.action}</span> <b>${esc(e.med)}</b>${e.detail?' — '+esc(e.detail):''}${e.reason?`<div style="color:var(--muted);font-size:12.5px">${esc(e.reason)}</div>`:''}</div>`).join('')}</div>`:'<div class="refbox">No changes logged yet.</div>'}
+      </div>`;
+  }
+  $('#bg').innerHTML=`
+    <div class="shbar"><button class="btn sm ghost" data-bga="close">‹ Back</button><div class="ttl">${esc(p.name)}${p.room?` <span style="font-family:var(--mono);font-weight:400;color:var(--muted);font-size:13px">· ${esc(p.room)}</span>`:''}</div></div>
+    <div class="shbody"><div class="shinner">
+      <div class="tabs">
+        <button data-tab="overview" class="${bgTab==='overview'?'on':''}">Admission &amp; PMHx</button>
+        <button data-tab="home" class="${bgTab==='home'?'on':''}">Home meds <span style="color:var(--muted);font-family:var(--mono);font-size:12px">${bg.homeMeds.length}</span></button>
+        <button data-tab="hosp" class="${bgTab==='hosp'?'on':''}">Hospital meds${nchg?`<span class="dot">${nchg}</span>`:''}</button>
+      </div>${body}</div></div>`;
+  $('#bg').querySelectorAll('[data-bgf]').forEach(el=>{el.value=getP(p,el.dataset.bgf)||''});
+  $('#bg').querySelectorAll('[data-hm]').forEach(el=>{el.value=bg.homeMeds[+el.dataset.hm][el.dataset.f]||''});
+  $('#bg').querySelectorAll('textarea').forEach(auto);
+}
+$('#bg').addEventListener('input',e=>{
+  const p=byId(bgPid);if(!p)return;const el=e.target;
+  if(el.dataset.bgf){setP(p,el.dataset.bgf,el.value)}
+  else if(el.dataset.hm!=null){p.bg.homeMeds[+el.dataset.hm][el.dataset.f]=el.value}
+  else return;
+  if(el.tagName==='TEXTAREA')auto(el);saveSoon();
+});
+$('#bg').addEventListener('click',e=>{
+  const p=byId(bgPid);if(!p)return;
+  const t=e.target.closest('[data-tab]');if(t){bgTab=t.dataset.tab;renderBg();return}
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.bga==='close')return closeBg();
+  if(b.dataset.bga==='addhome'){p.bg.homeMeds.push({id:uid(),name:'',dose:'',status:'Not reconciled',note:''});save();renderBg();const ins=$('#bg').querySelectorAll('[data-f=name]');ins[ins.length-1].focus();return}
+  if(b.dataset.hrm!=null){p.bg.homeMeds.splice(+b.dataset.hrm,1);save();renderBg();return}
+  if(b.dataset.hstart!=null){const h=p.bg.homeMeds[+b.dataset.hstart];return medForm(p,null,{name:h.name,dose:h.dose})}
+  if(b.dataset.bga==='addmed')return medForm(p,null);
+  if(b.dataset.lx){confirmBox('Delete log entry?','Use this only for an entry made in error. The medication itself is not changed.','Delete',()=>{p.bg.medLog=p.bg.medLog.filter(x=>x.id!==b.dataset.lx);save();renderBg()});return}
+  if(b.dataset.med){
+    const m=p.bg.meds.find(x=>x.id===b.dataset.mid);if(!m)return;
+    if(b.dataset.med==='edit')return medForm(p,m);
+    return medAction(p,m,b.dataset.med);
+  }
+});
+function medForm(p,m,prefill){
+  const isNew=!m;const v=m||Object.assign({name:'',dose:'',route:'',freq:'',indication:'',start:today()},prefill||{});
+  openModal(`<h3>${isNew?'Add hospital medication':'Change '+esc(m.name)}</h3>
+    <form class="mf" id="mf">
+      <div class="field"><label>Medication</label><input type="text" name="name" value="${esc(v.name)}" placeholder="e.g. Ceftriaxone" autocomplete="off"></div>
+      <div class="grid3">
+        <div class="field"><label>Dose</label><input type="text" name="dose" value="${esc(v.dose)}" placeholder="1 g" autocomplete="off"></div>
+        <div class="field"><label>Route</label><select name="route"><option value=""></option>${ROUTES.map(r=>`<option ${v.route===r?'selected':''}>${r}</option>`).join('')}</select></div>
+        <div class="field"><label>Frequency</label><input type="text" name="freq" value="${esc(v.freq)}" placeholder="q24h" autocomplete="off"></div>
+      </div>
+      <div class="field"><label>Indication</label><input type="text" name="indication" value="${esc(v.indication)}" placeholder="e.g. CAP" autocomplete="off"></div>
+      <div class="grid2">
+        ${isNew?`<div class="field"><label>Start date</label><input type="date" name="start" value="${esc(v.start)}"></div>`:''}
+        <div class="field"><label>${isNew?'Logged at':'Change made at'}</label><input type="datetime-local" name="ts" value="${nowLocal()}"></div>
+      </div>
+      ${isNew?'':`<div class="field"><label>Reason for change</label><input type="text" name="reason" placeholder="e.g. Renal dosing, Cr improved" autocomplete="off"></div>`}
+      <div class="macts">${isNew?'':`<button type="button" class="btn danger" data-m="delete" style="margin-right:auto">Delete (entered in error)</button>`}<button type="button" class="btn" data-m="no">Cancel</button><button class="btn primary" type="submit">${isNew?'Add':'Save change'}</button></div>
+    </form>`,mm=>{
+    const f=mm.querySelector('#mf');f.elements.name.focus();
+    mm.querySelector('[data-m=no]').onclick=closeModal;
+    const del=mm.querySelector('[data-m=delete]');
+    if(del)del.onclick=()=>{p.bg.meds=p.bg.meds.filter(x=>x.id!==m.id);p.bg.medLog=p.bg.medLog.filter(x=>x.medId!==m.id);save();closeModal();renderBg();toast('Medication deleted')};
+    f.addEventListener('submit',e=>{
+      e.preventDefault();
+      const nv={name:f.elements.name.value.trim(),dose:f.elements.dose.value.trim(),route:f.elements.route.value,freq:f.elements.freq.value.trim(),indication:f.elements.indication.value.trim()};
+      if(!nv.name){f.elements.name.focus();return}
+      const ts=f.elements.ts.value||nowLocal();
+      if(isNew){const nm={id:uid(),...nv,status:'active',start:f.elements.start.value||today()};p.bg.meds.push(nm);logMed(p,nm,'Started',medSig(nm),'',ts)}
+      else{
+        const lbl={name:'name',dose:'dose',route:'route',freq:'freq',indication:'indication'};
+        const diffs=Object.keys(lbl).filter(k=>(m[k]||'')!==(nv[k]||'')).map(k=>`${lbl[k]} ${m[k]||'—'} → ${nv[k]||'—'}`);
+        if(!diffs.length){closeModal();return}
+        Object.assign(m,nv);logMed(p,m,'Changed',diffs.join('; '),f.elements.reason.value.trim(),ts);
+      }
+      save();closeModal();renderBg();toast(isNew?'Medication added':'Change logged');
+    });
+  });
+}
+function medAction(p,m,action){
+  const verb={Held:'Hold',Resumed:'Resume',Stopped:'Stop',Restarted:'Restart'}[action];
+  openModal(`<h3>${verb} ${esc(m.name)}</h3>
+    <form class="mf" id="af">
+      <div class="field"><label>Reason</label><input type="text" name="reason" placeholder="${action==='Held'?'e.g. NPO for procedure, hypotension':action==='Stopped'?'e.g. Course complete, switched to PO':'Optional'}" autocomplete="off"></div>
+      <div class="field"><label>Time</label><input type="datetime-local" name="ts" value="${nowLocal()}"></div>
+      <div class="macts"><button type="button" class="btn" data-m="no">Cancel</button><button class="btn primary" type="submit">${verb}</button></div>
+    </form>`,mm=>{
+    const f=mm.querySelector('#af');f.elements.reason.focus();mm.querySelector('[data-m=no]').onclick=closeModal;
+    f.addEventListener('submit',e=>{e.preventDefault();const ts=f.elements.ts.value||nowLocal();
+      m.status=action==='Held'?'held':action==='Stopped'?'stopped':'active';
+      if(action==='Stopped')m.stop=ts.slice(0,10);if(action==='Restarted'){delete m.stop;m.start=ts.slice(0,10)}
+      logMed(p,m,action,action==='Restarted'?medSig(m):'',f.elements.reason.value.trim(),ts);save();closeModal();renderBg();toast(m.name+': '+action.toLowerCase());
+    });
+  });
+}
+
+/* ---------- events: list & detail ---------- */
+$('#addBtn').onclick=()=>patientForm(null);
+$('#roundsBtn').onclick=()=>openPres(state.patients[0]?.id);
+$('#plist').addEventListener('click',e=>{const b=e.target.closest('[data-pid]');if(!b)return;state.activeId=b.dataset.pid;save();document.body.classList.add('detail');renderList();renderDetail();$('#main').scrollTop=0});
+$('#saveFileBtn').onclick=()=>{if(!state.patients.length){toast('Nothing to back up yet');return}saveBackupFile()};
+$('#loadFile').addEventListener('change',async e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(!f)return;try{applyBackup(await f.text())}catch(err){toast('Couldn’t read that file')}});
+$('#copyAllBtn').onclick=()=>{
+  if(!state.patients.length){toast('No patients yet');return}
+  copyText(state.patients.map(p=>noteText(p,p.days[p.days.length-1])).join('\n\n────────────────────\n\n'),'All notes');
+};
+$('#clearBtn').onclick=()=>confirmBox('Clear all patients?','This permanently removes every patient, note and medication list stored in this browser. Make a backup first if you need one.','Clear all',()=>{state={patients:[],activeId:null};save();renderList();renderDetail()});
+$('#backupBtn').onclick=()=>{
+  const data=JSON.stringify({app:'prerounds',savedAt:new Date().toISOString(),patients:state.patients,activeId:state.activeId});
+  openModal(`<h3>Backup as text</h3>
+    <p>Copy this text to keep a backup or move your list to another device. To restore, paste a backup below and press Restore — this replaces the current list.</p>
+    <textarea class="code" id="bk">${esc(data)}</textarea>
+    <div class="macts"><button class="btn" data-m="no">Close</button><button class="btn" data-m="copy">Copy backup</button><button class="btn primary" data-m="restore">Restore from text</button></div>`,m=>{
+    const t=m.querySelector('#bk');
+    m.querySelector('[data-m=no]').onclick=closeModal;
+    m.querySelector('[data-m=copy]').onclick=()=>{try{navigator.clipboard.writeText(data).then(()=>toast('Backup copied'),()=>{t.focus();t.select()})}catch(e){t.focus();t.select()}};
+    m.querySelector('[data-m=restore]').onclick=()=>{const v=t.value;closeModal();applyBackup(v)};
+  });
+};
+
+const main=$('#main');
+main.addEventListener('input',e=>{
+  const el=e.target,p=active();if(!p)return;const d=curDay(p);
+  let carriedChanged=false;
+  if(el.dataset.path){setP(d,el.dataset.path,el.value);carriedChanged=clearCarried(d,el.dataset.path)}
+  else if(el.dataset.prob!=null){const x=d.p.problems[+el.dataset.prob];x[el.dataset.f]=el.value;if(x.carried&&el.dataset.f!=='status'){delete x.carried;el.closest('.prob').classList.remove('carriedp');const cb=el.closest('.prob').querySelector('.cbadge');if(cb)cb.remove();carriedChanged=true}}
+  else return;
+  if(el.tagName==='TEXTAREA')auto(el);
+  if(carriedChanged)refreshCarriedUI();
+  saveSoon();updateDerived();renderListSoon();
+});
+let listT;function renderListSoon(){clearTimeout(listT);listT=setTimeout(renderList,400)}
+main.addEventListener('change',e=>{
+  const p=active();if(!p)return;
+  if(e.target.id==='daySel'){p.viewDay=+e.target.value;save();renderDetail();main.scrollTop=0;return}
+  if(e.target.dataset.prob!=null&&e.target.dataset.f==='status'){const x=curDay(p).p.problems[+e.target.dataset.prob];x.status=e.target.value;delete x.carried;save();renderProblems();updateDerived();refreshCarriedUI()}
+});
+main.addEventListener('click',e=>{
+  const p=active();
+  const jump=e.target.closest('[data-jump]');
+  if(jump){e.preventDefault();const s=document.getElementById('sec-'+jump.dataset.jump);if(s)s.scrollIntoView({behavior:'smooth',block:'start'});return}
+  const b=e.target.closest('button');if(!b)return;
+  const act=b.dataset.act;
+  if(act==='add')return patientForm(null);
+  if(act==='demo')return addDemo();
+  if(!p)return;
+  const d=curDay(p);
+  if(act==='back'){document.body.classList.remove('detail');return}
+  if(act==='edit')return patientForm(p);
+  if(act==='bg')return openBg(p.id,'overview');
+  if(act==='present')return openPres(p.id);
+  if(act==='del')return confirmBox('Remove '+esc(p.name)+'?','Removes this patient, all their notes and their medication list from this browser.','Remove',()=>{state.patients=state.patients.filter(x=>x.id!==p.id);state.activeId=state.patients[0]?.id||null;document.body.classList.remove('detail');save();renderList();renderDetail()});
+  if(act==='copy')return copyText(noteText(p,d),'Note');
+  if(act==='newday'){
+    const made=continueToday(p);save();renderList();renderDetail();main.scrollTop=0;
+    toast(made?'Carried forward — update what changed':'Today’s card already exists');return;
+  }
+  if(act==='addprob'){d.p.problems.push(blankProb());save();renderProblems();const ins=document.querySelectorAll('#probs input');ins[ins.length-1].focus();updateDerived();return}
+  if(act==='allwnl'){
+    EXAM.forEach(x=>{if(!filled(d.o.exam[x[0]]))d.o.exam[x[0]]=x[2]});
+    document.querySelectorAll('[data-path^="o.exam."]').forEach(el=>{el.value=getP(d,el.dataset.path)||'';auto(el)});
+    save();updateDerived();renderListSoon();return;
+  }
+  if(act==='prevlabs'){
+    const pv=prevOf(p,d);if(!pv)return;let n=0;
+    LABS.forEach(l=>{if(!filled(d.o.labs[l[0]])&&filled(pv.o.labs[l[0]])){d.o.labs[l[0]]=pv.o.labs[l[0]];d.carried['o.labs.'+l[0]]=pv.date;n++}});
+    save();renderDetail();toast(n?n+' value(s) filled — marked as not repeated':'Nothing to fill');return;
+  }
+  if(b.dataset.wnl){const x=EXAM.find(z=>z[0]===b.dataset.wnl);d.o.exam[x[0]]=x[2];clearCarried(d,'o.exam.'+x[0]);const el=document.querySelector(`[data-path="o.exam.${x[0]}"]`);el.value=x[2];auto(el);save();updateDerived();refreshCarriedUI();renderListSoon();return}
+  if(b.dataset.trend){d.a.trend=d.a.trend===b.dataset.trend?'':b.dataset.trend;save();updateDerived();renderList();return}
+  if(b.dataset.reviewed){clearCarried(d,b.dataset.reviewed);save();refreshCarriedUI();updateDerived();renderListSoon();return}
+  if(b.dataset.revprob!=null){delete d.p.problems[+b.dataset.revprob].carried;save();renderProblems();refreshCarriedUI();updateDerived();renderListSoon();return}
+  if(b.dataset.revsec){const L=b.dataset.revsec.toLowerCase();Object.keys(d.carried).forEach(k=>{if(k[0]===L)delete d.carried[k]});if(L==='p')d.p.problems.forEach(x=>delete x.carried);save();renderDetail();renderList();return}
+  if(b.dataset.rmprob!=null){d.p.problems.splice(+b.dataset.rmprob,1);if(!d.p.problems.length)d.p.problems.push(blankProb());save();renderProblems();updateDerived();refreshCarriedUI();return}
+  if(b.dataset.up!=null||b.dataset.down!=null){
+    const i=+(b.dataset.up??b.dataset.down),j=b.dataset.up!=null?i-1:i+1;
+    if(j<0||j>=d.p.problems.length)return;[d.p.problems[i],d.p.problems[j]]=[d.p.problems[j],d.p.problems[i]];save();renderProblems();return;
+  }
+});
+window.addEventListener('resize',()=>document.querySelectorAll('main textarea').forEach(auto));
+
+/* ---------- init ---------- */
+load();
+$('#todayLbl').textContent='Internal Medicine · '+fmtDate(today());
+if(state.activeId&&!active())state.activeId=null;
+state.patients.forEach(p=>{p.viewDay=null});
+renderBanner();renderList();renderDetail();
+if(navigator.storage&&navigator.storage.persist){navigator.storage.persist().catch(()=>{})}
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){
+  const hadController=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(hadController){updateReady=true;renderBanner()}});
+}
+})();
+</script>
+</body>
+</html>
