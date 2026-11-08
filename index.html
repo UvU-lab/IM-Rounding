@@ -301,7 +301,7 @@ textarea.carried,input.carried{border-left:3px solid var(--amber);background:var
         <button class="btn sm" id="backupBtn">Backup as text</button>
         <button class="btn sm danger" id="clearBtn">Clear all</button>
       </div>
-      Stored only on this device — nothing is sent anywhere. Save a backup file at the end of each day. Follow your site's privacy rules (e.g. initials + bed), and clear the list when your rotation ends.
+      Stored only on this device — nothing is sent anywhere. Save a backup file to iCloud Drive at the end of each day; on another device, load the newest one. Loading merges, keeping whichever copy of each patient was edited last. Follow your site's privacy rules (e.g. initials + bed), and clear the list when your rotation ends.
     </div>
   </aside>
   <main id="main"></main>
@@ -383,12 +383,22 @@ function migrate(){
 }
 
 /* ---------- storage ---------- */
+/* Each patient carries mtime (last edit). Backups merge by keeping the newer copy, and
+   state.deleted records removals so a loaded backup doesn't bring a deleted patient back. */
+const snap={};
+function pkey(p){const {mtime,viewDay,...r}=p;return JSON.stringify(r)}
+function stampChanged(){const now=Date.now();state.patients.forEach(p=>{const k=pkey(p);if(snap[p.id]!==k){if(snap[p.id]!==undefined||!p.mtime)p.mtime=now;snap[p.id]=k}})}
+function snapAll(){state.patients.forEach(p=>{snap[p.id]=pkey(p);if(!p.mtime)p.mtime=1})}
+function markDeleted(ids){const now=Date.now(),cut=now-90*864e5;state.deleted=state.deleted||{};ids.forEach(id=>{state.deleted[id]=now;delete snap[id]});
+  for(const id in state.deleted)if(state.deleted[id]<cut)delete state.deleted[id]}
 function load(){
   try{const r=localStorage.getItem(KEY);if(r){const s=JSON.parse(r);if(s&&Array.isArray(s.patients))state=s}}
   catch(e){storageOK=false}
-  migrate();
+  state.deleted=state.deleted||{};
+  migrate();snapAll();
 }
 function save(){
+  stampChanged();
   try{localStorage.setItem(KEY,JSON.stringify(state));storageOK=true}
   catch(e){storageOK=false}
   renderBanner();
@@ -423,8 +433,9 @@ function renderBkStat(){
 }
 function markBackup(){lsSet('prerounds.lastBackup',nowLocal());renderBkStat()}
 async function saveBackupFile(){
-  const name='prerounds-backup-'+today()+'.json';
-  const data=JSON.stringify({app:'prerounds',savedAt:new Date().toISOString(),patients:state.patients,activeId:state.activeId});
+  stampChanged();
+  const n=new Date(),name='prerounds-backup-'+today()+'-'+pad(n.getHours())+pad(n.getMinutes())+'.json';
+  const data=JSON.stringify({app:'prerounds',v:2,savedAt:n.toISOString(),patients:state.patients,activeId:state.activeId,deleted:state.deleted||{}});
   const blob=new Blob([data],{type:'application/json'});
   let file=null;try{file=new File([blob],name,{type:'application/json'})}catch(e){}
   if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
@@ -440,11 +451,24 @@ async function saveBackupFile(){
 function applyBackup(text){
   let s;try{s=JSON.parse(text)}catch(e){toast('That file isn’t a Pre-Rounds backup');return}
   if(!s||!Array.isArray(s.patients)){toast('That file isn’t a Pre-Rounds backup');return}
-  const n=s.patients.length,when=s.savedAt?' saved '+fmtTs(s.savedAt):'';
-  confirmBox('Restore backup?',`This backup${esc(when)} has ${n} patient${n===1?'':'s'}. Restoring replaces everything currently in the app.`,'Restore',()=>{
-    state={patients:s.patients,activeId:s.activeId||null};migrate();state.patients.forEach(p=>{p.viewDay=null});
-    if(state.activeId&&!active())state.activeId=null;
-    save();renderList();renderDetail();toast('Backup restored');
+  stampChanged();
+  const del=Object.assign({},state.deleted||{});
+  for(const [id,t] of Object.entries(s.deleted||{}))del[id]=Math.max(del[id]||0,t);
+  const local=new Map(state.patients.map(p=>[p.id,p]));
+  const add=[],upd=[],rem=[];let keep=0;
+  s.patients.forEach(ip=>{const t=ip.mtime||0;if((del[ip.id]||0)>=t&&del[ip.id])return;
+    const lp=local.get(ip.id);if(!lp)add.push(ip);else if(t>(lp.mtime||0))upd.push(ip);else keep++});
+  state.patients.forEach(lp=>{if((del[lp.id]||0)>(lp.mtime||0))rem.push(lp)});
+  if(!add.length&&!upd.length&&!rem.length){state.deleted=del;save();toast('Already up to date');return}
+  const parts=[];if(add.length)parts.push(add.length+' new');if(upd.length)parts.push(upd.length+' updated (backup is newer)');
+  if(keep)parts.push(keep+' unchanged or newer here');if(rem.length)parts.push(rem.length+' removed (deleted on the other device)');
+  const when=s.savedAt?' saved '+fmtTs(s.savedAt):'';
+  confirmBox('Merge backup?',`This backup${esc(when)}: ${parts.join(', ')}. Each patient keeps whichever copy was edited last.`,'Merge',()=>{
+    const remIds=new Set(rem.map(p=>p.id));
+    state.patients=state.patients.filter(p=>!remIds.has(p.id)).map(p=>{const u=upd.find(x=>x.id===p.id);return u||p}).concat(add);
+    state.deleted=del;migrate();state.patients.forEach(p=>{p.viewDay=null;snap[p.id]=pkey(p)});
+    if(state.activeId&&!active())state.activeId=state.patients[0]?.id||null;
+    save();renderList();renderDetail();toast('Backup merged');
   });
 }
 
@@ -1061,11 +1085,12 @@ $('#copyAllBtn').onclick=()=>{
   if(!state.patients.length){toast('No patients yet');return}
   copyText(state.patients.map(p=>noteText(p,p.days[p.days.length-1])).join('\n\n────────────────────\n\n'),'All notes');
 };
-$('#clearBtn').onclick=()=>confirmBox('Clear all patients?','This permanently removes every patient, note and medication list stored in this browser. Make a backup first if you need one.','Clear all',()=>{state={patients:[],activeId:null};save();renderList();renderDetail()});
+$('#clearBtn').onclick=()=>confirmBox('Clear all patients?','This permanently removes every patient, note and medication list stored in this browser. Make a backup first if you need one.','Clear all',()=>{markDeleted(state.patients.map(p=>p.id));state={patients:[],activeId:null,deleted:state.deleted};save();renderList();renderDetail()});
 $('#backupBtn').onclick=()=>{
-  const data=JSON.stringify({app:'prerounds',savedAt:new Date().toISOString(),patients:state.patients,activeId:state.activeId});
+  stampChanged();
+  const data=JSON.stringify({app:'prerounds',v:2,savedAt:new Date().toISOString(),patients:state.patients,activeId:state.activeId,deleted:state.deleted||{}});
   openModal(`<h3>Backup as text</h3>
-    <p>Copy this text to keep a backup or move your list to another device. To restore, paste a backup below and press Restore — this replaces the current list.</p>
+    <p>Copy this text to keep a backup or move your list to another device. To restore, paste a backup below and press Restore. It merges with the current list, keeping the newer copy of each patient.</p>
     <textarea class="code" id="bk">${esc(data)}</textarea>
     <div class="macts"><button class="btn" data-m="no">Close</button><button class="btn" data-m="copy">Copy backup</button><button class="btn primary" data-m="restore">Restore from text</button></div>`,m=>{
     const t=m.querySelector('#bk');
@@ -1106,7 +1131,7 @@ main.addEventListener('click',e=>{
   if(act==='edit')return patientForm(p);
   if(act==='bg')return openBg(p.id,'overview');
   if(act==='present')return openPres(p.id);
-  if(act==='del')return confirmBox('Remove '+esc(p.name)+'?','Removes this patient, all their notes and their medication list from this browser.','Remove',()=>{state.patients=state.patients.filter(x=>x.id!==p.id);state.activeId=state.patients[0]?.id||null;document.body.classList.remove('detail');save();renderList();renderDetail()});
+  if(act==='del')return confirmBox('Remove '+esc(p.name)+'?','Removes this patient, all their notes and their medication list from this browser.','Remove',()=>{markDeleted([p.id]);state.patients=state.patients.filter(x=>x.id!==p.id);state.activeId=state.patients[0]?.id||null;document.body.classList.remove('detail');save();renderList();renderDetail()});
   if(act==='copy')return copyText(noteText(p,d),'Note');
   if(act==='newday'){
     const made=continueToday(p);save();renderList();renderDetail();main.scrollTop=0;

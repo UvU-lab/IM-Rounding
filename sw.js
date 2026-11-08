@@ -1,6 +1,6 @@
 // Pre-Rounds service worker — makes the app open offline.
 // Patient data is NOT handled here; it lives only in the app's local storage on the device.
-const VERSION = 'prerounds-v3';
+const VERSION = 'prerounds-v4';
 const FONTS = 'prerounds-fonts';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
